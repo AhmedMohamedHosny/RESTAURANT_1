@@ -65,7 +65,7 @@
 
     <!-- Top Announcement Bar -->
 <div class="bg-brand-dark text-white text-sm md:text-base py-2 px-4 border-b border-brand-gold/20 font-black overflow-hidden">
-<marquee direction="left" scrollamount="6" class="tracking-wide">        
+<marquee direction="right" scrollamount="10" dir="ltr" class="tracking-wide">    
         🚚 عجيبه الراعي الرسمي للسعادة | اطلب أونلاين بسهولة واستمتع بأشهى الوجبات | توصيل سريع لجميع المناطق &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🚚 عجيبه الراعي الرسمي للسعادة | اطلب أونلاين بسهولة واستمتع بأشهى الوجبات | توصيل سريع لجميع المناطق
     </marquee>
 </div>
@@ -75,8 +75,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <!-- Right: Logo & Brand -->
             <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('home')">
-<img src="logo.png" alt="عجيبه" class="w-12 h-12 object-contain rounded-full border-2 border-brand-gold shadow-sm">
-                
+<img src="logo.png" alt="عجيبه" onclick="handleLogoClick()" class="w-12 h-12 object-contain rounded-full border-2 border-brand-gold shadow-sm cursor-pointer">                
                 <div>
                     <h1 class="text-2xl font-black text-brand-dark tracking-tight leading-none">عجيبه</h1>
                     <span class="text-[10px] font-bold text-brand-gold tracking-widest uppercase block mt-1">الراعي الرسمي للسعادة</span>
@@ -107,11 +106,7 @@
                     <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-gold text-brand-dark font-extrabold text-xs w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
                 </button>
 
-                <!-- Admin Staff Dashboard Access Button -->
-                <button onclick="openAdminAuth()" class="hidden sm:flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold px-3 py-2 rounded-lg border border-gray-300 transition-colors">
-                    <i class="fa-solid fa-user-shield"></i>
-                    لوحة الكاشير
-                </button>
+
             </div>
         </div>
 
@@ -196,18 +191,19 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-8">
                 <div>
                     <h4 class="text-xl font-bold text-brand-gold mb-4">📍 عنوان المطعم</h4>
-                    <p class="text-gray-300 leading-relaxed">البدرشين - شارع عباس عناني - بجوار كاريون</p>
+                    <p class="text-gray-300 leading-relaxed">البدرشين - شارع عباس عناني - بجوار كازيون</p>
                 </div>
                 <div>
                     <h4 class="text-xl font-bold text-brand-gold mb-4">📞 أرقام الدليفري والتوصيل</h4>
-                    <div class="text-gray-300 space-y-1 text-sm font-bold dir-ltr text-right">
-                        <p>📱 011 271 66 175</p>
-                        <p>📱 011 27 155 176</p>
-                        <p>📱 010 10 485 333</p>
-                        <p>📱 010 25 441 171</p>
-                        <p>📱 0100 330 84 95</p>
-                        <p>📱 011 42 400 434</p>
-                    </div>
+<div class="text-gray-300 space-y-2 text-sm font-bold text-right" dir="ltr">
+    <p class="tracking-widest">01127166175 📱</p>
+    <p class="tracking-widest">01127155176 📱</p>
+    <p class="tracking-widest">01010485333 📱</p>
+    <p class="tracking-widest">01025441171 📱</p>
+    <p class="tracking-widest">01003308495 📱</p>
+    <p class="tracking-widest">01142400434 📱</p>
+</div>
+                    
                 </div>
                 <div>
                     <h4 class="text-xl font-bold text-brand-gold mb-4">🕐 مواعيد العمل</h4>
@@ -223,23 +219,27 @@
         </section>
     </main>
 
-    <!-- Footer Container -->
-    <footer class="bg-black text-gray-400 border-t border-gray-800 py-10">
-        <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
-            <div class="flex justify-center items-center gap-2 text-white font-black text-2xl">
-                <div class="w-8 h-8 rounded-full bg-brand-gold text-brand-dark flex items-center justify-center text-lg">ع</div>
-                عجيبه | AGEEBA RESTAURANT
-            </div>
-            <p class="text-brand-gold font-medium text-sm">إن أرضيناك تحدث عنا .. وإن لم نرضيك تحدث إلينا ❤️</p>
-            <div class="pt-2 flex justify-center items-center gap-6 text-xs text-gray-400">
-                <a href="https://www.facebook.com/3gebaa?mibextid=LQQJ4d" target="_blank" class="hover:text-brand-gold flex items-center gap-1">
-                    <i class="fa-brands fa-facebook text-base"></i> فيسبوك
-                </a>
-                <span>•</span>
-                <button onclick="openAdminAuth()" class="underline hover:text-white">دخول لوحة الكاشير</button>
-            </div>
+<!-- Footer Container -->
+<footer class="bg-black text-gray-400 border-t border-gray-800 py-10">
+    <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+        <div class="flex justify-center items-center gap-2 text-white font-black text-2xl">
+            <div class="w-8 h-8 rounded-full bg-brand-gold text-brand-dark flex items-center justify-center text-lg">ع</div>
+            عجيبه | AGEEBA RESTAURANT
         </div>
-    </footer>
+        <p class="text-brand-gold font-medium text-sm">إن أرضيناك تحدث عنا .. وإن لم نرضيك تحدث إلينا ❤️</p>
+
+<div class="pt-4 border-t border-gray-900 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500">
+            <p>© جميع الحقوق محفوظة لمطعم عجيبه 2026</p>
+            
+            <p class="flex items-center gap-1 font-bold">
+                Designed & Developed by 
+                <a href="https://wa.me/201101579399" target="_blank" class="text-brand-gold hover:underline font-black flex items-center gap-1">
+                    Ahmed Mohamed <i class="fa-brands fa-whatsapp text-green-500 text-sm"></i>
+                </a>
+            </p>
+        </div>
+    </div>
+</footer>
 
     <!-- PRODUCT DETAILS MODAL -->
     <div id="product-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -1242,7 +1242,23 @@ resultDiv.classList.remove('hidden');
                 </div>
             `;
         }
+// فتح لوحة الكاشير سرّياً عبر الكيبورد (Ctrl + Shift + A)
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a' || e.key === 'ش')) {
+        openAdminAuth();
+    }
+});
 
+// فتح لوحة الكاشير سرّياً عند الضغط 5 مرات على شعار المطعم
+let logoClickCounter = 0;
+function handleLogoClick() {
+    logoClickCounter++;
+    if (logoClickCounter >= 5) {
+        logoClickCounter = 0;
+        openAdminAuth();
+    }
+    setTimeout(() => { logoClickCounter = 0; }, 3000);
+}
         function openAdminAuth() {
             const pwd = prompt("أدخل كلمة مرور كاشير مطعم عجيبه (افتراضي: 1234):");
             if (pwd === "1234" || pwd === "admin") {
