@@ -1242,9 +1242,11 @@ resultDiv.classList.remove('hidden');
                 </div>
             `;
         }
-// فتح لوحة الكاشير سرّياً عبر الكيبورد (Ctrl + Shift + A)
+// فتح لوحة الكاشير عبر الاختصار ومنع المتصفح من اعتراضه
 document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a' || e.key === 'ش')) {
+    // يعمل على Ctrl + Shift + A أو Ctrl + Shift + X
+    if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'x' || e.key === 'ش' || e.key === 'ء')) {
+        e.preventDefault(); // يمنع جوجل كروم من فتح قائمة التبويبات
         openAdminAuth();
     }
 });
