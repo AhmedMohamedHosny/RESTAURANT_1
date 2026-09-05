@@ -38,7 +38,7 @@
 /* 1. خلفيات متدرجة فاخرة مع إضاءة ذهبية */
 body {
     background-color: #0d0f12;
-    color: #e5e7eb;
+    color: #ffffff;
     font-family: 'Tajawal', sans-serif;
     overflow-x: hidden;
 }
@@ -405,13 +405,14 @@ header {
         <div class="pt-4 border-t border-gray-900 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500 font-sans">
             <p>© 2026 AGEEBA Restaurant. All Rights Reserved.</p>
             
-            <p class="flex items-center gap-1 font-bold">
-                <span>Designed & Developed by</span>
-                <a href="https://wa.me/201101579399" target="_blank" class="text-brand-gold hover:underline font-black inline-flex items-center gap-1 ml-1">
-                    <i class="fa-brands fa-whatsapp text-green-500 text-sm"></i>
-                    Ahmed Mohamed
-                </a>
-            </p>
+<p class="flex items-center gap-1 font-bold" dir="ltr">
+    <span>Designed & Developed by</span>
+    <a href="https://wa.me/201101579399" target="_blank" class="text-brand-gold hover:underline font-black inline-flex items-center gap-1 ml-1">
+        Ahmed Mohamed
+        <i class="fa-brands fa-whatsapp text-green-500 text-sm"></i>
+    </a>
+</p>
+            
         </div>
     </div>
 </footer>
@@ -932,8 +933,9 @@ function renderMenu(itemsToRender = null) {
                     </span>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="font-black text-white text-base leading-tight group-hover:text-amber-400 transition-colors">${item.name}</h4>
-                    <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed">${item.description}</p>
+<h4 class="font-black text-amber-200 text-base leading-tight transition-colors group-hover:text-brand-gold">${item.name}</h4>                    
+<p class="text-xs text-gray-200 line-clamp-2 leading-relaxed group-hover:text-white">${item.description}</p>
+                    
                 </div>
             </div>
             <div class="pt-4 mt-2 border-t border-amber-500/10 flex items-center justify-between">
@@ -1769,15 +1771,12 @@ function editItemPrice(itemId) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
-    <!-- Floating WhatsApp Button -->
-<a href="https://wa.me/201142400434?text=%D0%A3%D0%BB%D0%B0%D0%BC%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A8%D9%87" 
+<!-- Floating WhatsApp Button -->
+<a href="https://wa.me/201142400434?text=%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A9" 
    target="_blank" 
-   class="fixed bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95 group"
-   title="اطلب عبر الواتساب مباشر">
+   class="fixed bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95">
     <i class="fa-brands fa-whatsapp text-3xl"></i>
-    <span class="absolute left-16 bg-gray-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
-        اطلب مباشر عبر الواتساب 💬
-    </span>
 </a>
+    
 </body>
 </html>
