@@ -44,13 +44,28 @@
 .cart-shake {
     animation: cartShake 0.4s ease-in-out !important;
 }
+        /* تنسيق بون الطباعة الحرارية 80mm */
+@media print {
+    body * { visibility: hidden; }
+    #printable-receipt, #printable-receipt * { visibility: visible; }
+    #printable-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        padding: 5mm;
+        font-family: monospace;
+        color: #000;
+        background: #fff;
+    }
+}
     </style>
 </head>
 <body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
 
     <!-- Top Announcement Bar -->
 <div class="bg-brand-dark text-white text-sm md:text-base py-2 px-4 border-b border-brand-gold/20 font-black overflow-hidden">
-    <marquee direction="right" scrollamount="6" class="tracking-wide">
+<marquee direction="left" scrollamount="6" class="tracking-wide">        
         🚚 عجيبه الراعي الرسمي للسعادة | اطلب أونلاين بسهولة واستمتع بأشهى الوجبات | توصيل سريع لجميع المناطق &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🚚 عجيبه الراعي الرسمي للسعادة | اطلب أونلاين بسهولة واستمتع بأشهى الوجبات | توصيل سريع لجميع المناطق
     </marquee>
 </div>
@@ -759,6 +774,25 @@
                 </div>
             `).join('');
         }
+        // جرس المطبخ الصوتي (تنبيه الطلب الجديد)
+const kitchenChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+let chimeInterval = null;
+
+function playKitchenAlert() {
+    try {
+        kitchenChime.play();
+        if (!chimeInterval) {
+            chimeInterval = setInterval(() => { kitchenChime.play(); }, 3000);
+        }
+    } catch(e) { console.log('الصوت بحاجة للتفاعل أولاً'); }
+}
+
+function stopKitchenAlert() {
+    if (chimeInterval) {
+        clearInterval(chimeInterval);
+        chimeInterval = null;
+    }
+}
 
         function filterMenu() {
             const query = document.getElementById('search-input').value.trim().toLowerCase();
@@ -1174,13 +1208,21 @@ function proceedToReview() {
 
             const currentStatusIdx = statuses.findIndex(s => s.key === order.status);
 
-            resultDiv.classList.remove('hidden');
+resultDiv.classList.remove('hidden');
             timelineContainer.innerHTML = `
                 <div class="bg-gray-50 p-3 rounded-xl text-xs space-y-1 mb-4">
                     <p><strong>صاحب الطلب:</strong> ${order.customerName}</p>
                     <p><strong>العنوان:</strong> ${order.address}</p>
                     <p><strong>الإجمالي:</strong> ${order.total} ج.م</p>
                 </div>
+
+                ${(order.status === 'PREPARING' || order.status === 'ACCEPTED') ? `
+                    <div class="bg-amber-50 border border-amber-300 p-4 rounded-xl text-center space-y-1 my-4">
+                        <span class="text-xs text-amber-800 font-bold block">الوقت التقديري المتبقي لاستلام الوجبة:</span>
+                        <span class="text-2xl font-black text-brand-dark animate-pulse">⏳ حوالي 25 - 35 دقيقة</span>
+                    </div>
+                ` : ''}
+
                 <div class="space-y-4">
                     ${statuses.map((st, idx) => {
                         const isDone = idx <= currentStatusIdx;
@@ -1288,21 +1330,27 @@ function proceedToReview() {
                         <span>${order.total} ج.م</span>
                     </div>
 
-                    <div class="pt-2 flex flex-wrap gap-2">
-                        ${order.status === 'NEW' ? `
-                            <button onclick="updateOrderStatus('${order.id}', 'ACCEPTED')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-xs">قبول الطلب ✓</button>
-                            <button onclick="updateOrderStatus('${order.id}', 'CANCELLED')" class="bg-red-100 text-red-700 font-bold px-3 py-2 rounded-lg text-xs">رفض</button>
-                        ` : ''}
-                        ${order.status === 'ACCEPTED' ? `
-                            <button onclick="updateOrderStatus('${order.id}', 'PREPARING')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs">بدء التجهيز 👨‍🍳</button>
-                        ` : ''}
-                        ${order.status === 'PREPARING' ? `
-                            <button onclick="updateOrderStatus('${order.id}', 'OUT_FOR_DELIVERY')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg text-xs">خرج للتوصيل 🛵</button>
-                        ` : ''}
-                        ${order.status === 'OUT_FOR_DELIVERY' ? `
-                            <button onclick="updateOrderStatus('${order.id}', 'DELIVERED')" class="flex-1 bg-green-700 hover:bg-green-800 text-white font-bold py-2 rounded-lg text-xs">تم التسليم النهائي 🎉</button>
-                        ` : ''}
-                    </div>
+<div class="pt-2 flex flex-wrap gap-2 border-t pt-3">
+    <!-- زر الطباعة الحرارية المباشرة -->
+    <button onclick="printOrderReceipt('${order.id}')" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-2">
+        🖨️ طباعة الفاتورة (بون المطبخ والدليفري)
+    </button>
+
+    ${order.status === 'NEW' ? `
+        <button onclick="stopKitchenAlert(); updateOrderStatus('${order.id}', 'ACCEPTED')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-xs">قبول إيقاف التنبيه ✓</button>
+        <button onclick="stopKitchenAlert(); updateOrderStatus('${order.id}', 'CANCELLED')" class="bg-red-100 text-red-700 font-bold px-3 py-2 rounded-lg text-xs">رفض</button>
+    ` : ''}
+    ${order.status === 'ACCEPTED' ? `
+        <button onclick="updateOrderStatus('${order.id}', 'PREPARING')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs">بدء التجهيز 👨‍🍳</button>
+    ` : ''}
+    ${order.status === 'PREPARING' ? `
+        <button onclick="updateOrderStatus('${order.id}', 'OUT_FOR_DELIVERY')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg text-xs">خرج للتوصيل 🛵</button>
+    ` : ''}
+    ${order.status === 'OUT_FOR_DELIVERY' ? `
+        <button onclick="updateOrderStatus('${order.id}', 'DELIVERED')" class="flex-1 bg-green-700 hover:bg-green-800 text-white font-bold py-2 rounded-lg text-xs">تم التسليم ✓</button>
+    ` : ''}
+</div>
+                    
                 </div>
             `).join('');
         }
@@ -1330,6 +1378,57 @@ function proceedToReview() {
                 default: return 'bg-gray-100 text-gray-800';
             }
         }
+        function printOrderReceipt(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // إنشاء حاوية الطباعة
+    let printContainer = document.getElementById('printable-receipt');
+    if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'printable-receipt';
+        document.body.appendChild(printContainer);
+    }
+
+    printContainer.innerHTML = `
+        <div style="text-align:center; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
+            <h2 style="margin:0; font-size:18px;">مطعم عجيبه</h2>
+            <p style="margin:2px 0; font-size:12px;">البدرشين - ش عباس عناني</p>
+            <p style="margin:2px 0; font-size:11px;">تليفون: 01127166175</p>
+            <p style="margin:5px 0 0 0; font-size:14px;">رقم الطلب: #${order.id}</p>
+        </div>
+
+        <div style="font-size:11px; margin-bottom:5px; border-bottom:1px dashed #000; padding-bottom:5px;">
+            <p style="margin:2px 0;">العميل: ${order.customerName}</p>
+            <p style="margin:2px 0;">الهاتف: ${order.phone}</p>
+            <p style="margin:2px 0;">العنوان: ${order.address}</p>
+            <p style="margin:2px 0;">الوقت: ${order.createdAt}</p>
+            ${order.notes ? `<p style="margin:2px 0; font-weight:bold;">ملاحظات: ${order.notes}</p>` : ''}
+        </div>
+
+        <div style="font-size:11px; margin-bottom:5px; border-bottom:1px dashed #000; padding-bottom:5px;">
+            <p style="font-weight:bold; margin:0 0 3px 0;">--- تفاصيل الأصناف (المطبخ) ---</p>
+            ${order.items.map(item => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                    <span>${item.name} (${item.selectedSize}) × ${item.quantity}</span>
+                    <span>${item.priceAtPurchase * item.quantity}ج</span>
+                </div>
+                ${item.selectedExtras.length > 0 ? `<div style="font-size:9px; padding-right:5px;">إضافات: ${item.selectedExtras.join(', ')}</div>` : ''}
+            `).join('')}
+        </div>
+
+        <div style="font-size:12px; font-weight:bold; text-align:left;">
+            <p style="margin:2px 0;">المجموع: ${order.subtotal} ج.م</p>
+            <p style="margin:2px 0;">التوصيل: ${order.deliveryFee} ج.م</p>
+            <p style="margin:4px 0 0 0; font-size:14px;">الإجمالي: ${order.total} ج.م</p>
+        </div>
+        <div style="text-align:center; margin-top:10px; font-size:10px;">
+            شكراً لطلبك من عجيبه ❤️
+        </div>
+    `;
+
+    window.print();
+}
 
         function updateOrderStatus(orderId, newStatus) {
             const order = orders.find(o => o.id === orderId);
