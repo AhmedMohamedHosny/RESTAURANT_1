@@ -34,6 +34,16 @@
         body { font-family: 'Tajawal', sans-serif; background-color: #FAFAFA; color: #1F2937; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes cartShake {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.2) rotate(15deg); }
+    50% { transform: scale(1.2) rotate(-15deg); }
+    75% { transform: scale(1.2) rotate(10deg); }
+    100% { transform: scale(1); }
+}
+.cart-shake {
+    animation: cartShake 0.4s ease-in-out !important;
+}
     </style>
 </head>
 <body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
@@ -281,10 +291,32 @@
                             </label>
                         </div>
                     </div>
-                    <div id="address-container">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">عنوان التوصيل بالتفصيل *</label>
-                        <textarea id="cust-address" required rows="2" placeholder="المنطقة، اسم الشارع، رقم العمارة، الشقة..." class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:border-brand-dark focus:outline-none"></textarea>
-                    </div>
+<div id="address-container" class="space-y-3">
+    <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">اختر منطقة التوصيل *</label>
+        <select id="cust-area" onchange="updateDeliveryAreaPrice()" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none bg-white font-bold text-gray-800">
+            <option value="" data-price="15">-- اختر المنطقة --</option>
+            <option value="البدرشين (حول المحل)" data-price="10">البدرشين (حول المحل) - 10 ج.م</option>
+            <option value="البدرشين" data-price="15">البدرشين - 15 ج.م</option>
+            <option value="الشورى والجعفري" data-price="15">الشورى والجعفري - 15 ج.م</option>
+            <option value="العزبة الشرقية والغربية" data-price="15">العزبة الشرقية والغربية - 15 ج.م</option>
+            <option value="كوبري الري ومصنع الشاي" data-price="15">كوبري الري ومصنع الشاي - 15 ج.م</option>
+            <option value="الطرفاية وميت رهينة" data-price="30">الطرفاية وميت رهينة - 30 ج.م</option>
+            <option value="الحوامدية والشنباب" data-price="35">الحوامدية والشنباب - 35 ج.م</option>
+            <option value="العزيزية والمرازيق" data-price="40">العزيزية والمرازيق - 40 ج.م</option>
+            <option value="سقارة وأبوصير" data-price="50">سقارة وأبوصير - 50 ج.م</option>
+            <option value="الشوبك ومزغونة" data-price="70">الشوبك ومزغونة - 70 ج.م</option>
+            <option value="دهشور وشبرامنت" data-price="100">دهشور وشبرامنت - 100 ج.م</option>
+            <option value="منطقة أخرى" data-price="20">منطقة أخرى (حسب الاتفاق)</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">العنوان بالتفصيل (الشارع / رقم العمارة / الدور) *</label>
+        <textarea id="cust-address" required rows="2" placeholder="مثال: شارع عباس عناني، بجوار كازيون، عمارة 5 الدور 2..." class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:border-brand-dark focus:outline-none"></textarea>
+    </div>
+</div>
+
+                    
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">ملاحظات إضافية (اختياري)</label>
                         <input type="text" id="cust-notes" placeholder="مثال: بدون بصل، زيادة كاتشب..." class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
@@ -594,6 +626,7 @@
         let cart = JSON.parse(localStorage.getItem('ageeba_cart')) || [];
         let orders = JSON.parse(localStorage.getItem('ageeba_orders')) || [];
         let activeCategory = 'الكل';
+        let adminActiveCategory = 'الكل';
         let currentEditingItem = null;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -605,6 +638,7 @@
             renderOffers();
             renderMenuTabs();
             renderMenu();
+            loadSavedCustomerInfo();
             updateCartBadge();
         });
 
@@ -831,20 +865,27 @@
             document.getElementById('modal-total-price').innerText = (currentEditingItem.price * currentEditingItem.quantity) + ' ج.م';
         }
 
-        function confirmAddToCart() {
-            cart.push({
-                cartItemId: Date.now().toString(),
-                name: currentEditingItem.name,
-                price: currentEditingItem.price,
-                selectedSize: currentEditingItem.selectedSize,
-                selectedExtras: [...currentEditingItem.selectedExtras],
-                quantity: currentEditingItem.quantity,
-                image: currentEditingItem.image
-            });
-            saveCartState();
-            closeProductModal();
-            toggleCartModal();
-        }
+function confirmAddToCart() {
+    cart.push({
+        cartItemId: Date.now().toString(),
+        name: currentEditingItem.name,
+        price: currentEditingItem.currentPrice || currentEditingItem.price,
+        selectedSize: currentEditingItem.selectedSize,
+        selectedExtras: [...currentEditingItem.selectedExtras],
+        quantity: currentEditingItem.quantity,
+        image: currentEditingItem.image
+    });
+    saveCartState();
+    closeProductModal();
+    toggleCartModal();
+
+    // تأثير هزة السلة والتفاعل
+    const cartBtn = document.getElementById('cart-badge')?.parentElement;
+    if (cartBtn) {
+        cartBtn.classList.add('cart-shake');
+        setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
+    }
+}
 
         function addOfferToCart(title, price) {
             cart.push({
@@ -962,64 +1003,105 @@
 
         let pendingOrderData = null;
 
-        function proceedToReview() {
-            const name = document.getElementById('cust-name').value.trim();
-            const phone = document.getElementById('cust-phone').value.trim();
-            const type = document.querySelector('input[name="orderType"]:checked').value;
-            const address = document.getElementById('cust-address').value.trim();
-            const notes = document.getElementById('cust-notes').value.trim();
+// متغير ديناميكي لسعر التوصيل للمنطقة
+let currentDeliveryFee = 15;
 
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const deliveryFee = type === 'DELIVERY' ? 15 : 0;
-            const total = subtotal + deliveryFee;
+function updateDeliveryAreaPrice() {
+    const areaSelect = document.getElementById('cust-area');
+    if (areaSelect) {
+        const selectedOption = areaSelect.options[areaSelect.selectedIndex];
+        currentDeliveryFee = parseFloat(selectedOption.getAttribute('data-price') || "15");
+        
+        // تحديث عرض السعر في السلة والمراجعة
+        document.getElementById('cart-delivery-fee').innerText = currentDeliveryFee + ' ج.م';
+        renderCartItems();
+    }
+}
 
-            pendingOrderData = {
-                id: 'AG-' + Math.floor(1000 + Math.random() * 9000),
-                customerName: name,
-                phone: phone,
-                type: type,
-                address: type === 'DELIVERY' ? address : 'استلام من المطعم',
-                notes: notes,
-                items: cart.map(i => ({
-                    name: i.name,
-                    quantity: i.quantity,
-                    priceAtPurchase: i.price,
-                    selectedSize: i.selectedSize,
-                    selectedExtras: i.selectedExtras
-                })),
-                subtotal: subtotal,
-                deliveryFee: deliveryFee,
-                total: total,
-                status: 'NEW',
-                createdAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
-            };
+// حفظ بيانات العميل تلقائياً في المتصفح مثل موقع اسبايسي
+function autoSaveCustomerInfo() {
+    const data = {
+        name: document.getElementById('cust-name')?.value || '',
+        phone: document.getElementById('cust-phone')?.value || '',
+        address: document.getElementById('cust-address')?.value || '',
+        area: document.getElementById('cust-area')?.value || ''
+    };
+    localStorage.setItem('ageeba_customer_data', JSON.stringify(data));
+}
 
-            document.getElementById('rev-name').innerText = name;
-            document.getElementById('rev-phone').innerText = phone;
-            document.getElementById('rev-type').innerText = type === 'DELIVERY' ? 'توصيل للمنزل (+15 ج.م)' : 'استلام من المطعم';
-            
-            if (type === 'DELIVERY') {
-                document.getElementById('rev-address-row').classList.remove('hidden');
-                document.getElementById('rev-address').innerText = address;
-            } else {
-                document.getElementById('rev-address-row').classList.add('hidden');
-            }
+function loadSavedCustomerInfo() {
+    const saved = JSON.parse(localStorage.getItem('ageeba_customer_data')) || {};
+    if (saved.name && document.getElementById('cust-name')) document.getElementById('cust-name').value = saved.name;
+    if (saved.phone && document.getElementById('cust-phone')) document.getElementById('cust-phone').value = saved.phone;
+    if (saved.address && document.getElementById('cust-address')) document.getElementById('cust-address').value = saved.address;
+    if (saved.area && document.getElementById('cust-area')) document.getElementById('cust-area').value = saved.area;
+}
 
-            document.getElementById('rev-items').innerHTML = cart.map(item => `
-                <div class="py-1 flex justify-between items-center">
-                    <div>
-                        <span class="font-bold text-gray-900">${item.name}</span> × ${item.quantity}
-                        <span class="text-xs text-gray-400 block">${item.selectedSize}</span>
-                    </div>
-                    <span class="font-bold text-gray-800">${item.price * item.quantity} ج.م</span>
-                </div>
-            `).join('');
+// تحديث دالة تحضير مراجعة الطلب مع المنطقة
+function proceedToReview() {
+    const name = document.getElementById('cust-name').value.trim();
+    const phone = document.getElementById('cust-phone').value.trim();
+    const type = document.querySelector('input[name="orderType"]:checked').value;
+    const areaSelect = document.getElementById('cust-area');
+    const areaName = areaSelect ? areaSelect.value : '';
+    const addressDetails = document.getElementById('cust-address').value.trim();
+    const notes = document.getElementById('cust-notes').value.trim();
 
-            document.getElementById('rev-total').innerText = total + ' ج.م';
+    // حفظ البيانات تلقائياً للمرات القادمة
+    autoSaveCustomerInfo();
 
-            document.getElementById('checkout-step-1').classList.add('hidden');
-            document.getElementById('checkout-step-2').classList.remove('hidden');
-        }
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = type === 'DELIVERY' ? currentDeliveryFee : 0;
+    const total = subtotal + deliveryFee;
+
+    const fullAddress = type === 'DELIVERY' ? `${areaName} - ${addressDetails}` : 'استلام من الفرع (البدرشين - ش عباس عناني)';
+
+    pendingOrderData = {
+        id: 'AG-' + Math.floor(1000 + Math.random() * 9000),
+        customerName: name,
+        phone: phone,
+        type: type,
+        address: fullAddress,
+        notes: notes,
+        items: cart.map(i => ({
+            name: i.name,
+            quantity: i.quantity,
+            priceAtPurchase: i.price,
+            selectedSize: i.selectedSize,
+            selectedExtras: i.selectedExtras
+        })),
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        total: total,
+        status: 'NEW',
+        createdAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    document.getElementById('rev-name').innerText = name;
+    document.getElementById('rev-phone').innerText = phone;
+    document.getElementById('rev-type').innerText = type === 'DELIVERY' ? `توصيل دليفري (+${deliveryFee} ج.م)` : 'استلام من الفرع';
+    
+    if (type === 'DELIVERY') {
+        document.getElementById('rev-address-row').classList.remove('hidden');
+        document.getElementById('rev-address').innerText = fullAddress;
+    } else {
+        document.getElementById('rev-address-row').classList.add('hidden');
+    }
+
+    document.getElementById('rev-items').innerHTML = cart.map(item => `
+        <div class="py-1 flex justify-between items-center">
+            <div>
+                <span class="font-bold text-gray-900">${item.name}</span> × ${item.quantity}
+                <span class="text-xs text-gray-400 block">${item.selectedSize}</span>
+            </div>
+            <span class="font-bold text-gray-800">${item.price * item.quantity} ج.م</span>
+        </div>
+    `).join('');
+
+    document.getElementById('rev-total').innerText = total + ' ج.م';
+    document.getElementById('checkout-step-1').classList.add('hidden');
+    document.getElementById('checkout-step-2').classList.remove('hidden');
+}
 
         function backToCheckoutEdit() {
             document.getElementById('checkout-step-2').classList.add('hidden');
@@ -1267,36 +1349,94 @@
             openAdminAuth();
         }
 
-        function renderAdminMenuManagement() {
-            const container = document.getElementById('admin-menu-list');
-            container.innerHTML = menuItems.map(item => `
-                <div class="bg-white p-4 rounded-xl border border-gray-200 flex justify-between items-center">
+function renderAdminMenuManagement() {
+    const container = document.getElementById('admin-view-menu');
+    
+    // 1. تصفية المنتجات حسب القسم المختار في لوحة التحكم
+    const filteredItems = adminActiveCategory === 'الكل' 
+        ? menuItems 
+        : menuItems.filter(item => item.category === adminActiveCategory);
+
+    // 2. بناء الهيكل الكامل مع تبويبات الأقسام
+    container.innerHTML = `
+        <div class="flex flex-wrap justify-between items-center gap-4 border-b border-gray-200 pb-4">
+            <div>
+                <h3 class="text-xl font-bold text-gray-800">إدارة الوجبات والأسعار والتوفر</h3>
+                <p class="text-xs text-gray-500">اختر القسم لتعديل أسعار الوجبات أو إخفائها من المنيو</p>
+            </div>
+            <button onclick="promptAddNewProduct()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-colors flex items-center gap-2">
+                <span>+ إضافة صنف جديد</span>
+            </button>
+        </div>
+
+        <!-- أزرار الأقسام (Category Tabs) -->
+        <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            ${CATEGORIES.map(cat => `
+                <button onclick="filterAdminCategory('${cat.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${adminActiveCategory === cat.id ? 'bg-brand-dark text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}">
+                    ${cat.icon} ${cat.name}
+                </button>
+            `).join('')}
+        </div>
+
+        <!-- كروت الأصناف -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+            ${filteredItems.length === 0 ? `
+                <div class="col-span-full text-center py-8 text-gray-400 font-bold text-sm">لا توجد أصناف في هذا القسم.</div>
+            ` : filteredItems.map(item => `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between space-y-3">
                     <div class="flex items-center gap-3">
-                        <img src="${item.image}" class="w-12 h-12 rounded-lg object-cover">
-                        <div>
-                            <h5 class="font-bold text-sm text-gray-900">${item.name}</h5>
-                            <span class="text-xs text-brand-dark font-black">${item.price} ج.م</span>
+                        <img src="${item.image}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0 border">
+                        <div class="flex-grow space-y-1">
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">${item.category}</span>
+                            <h5 class="font-bold text-sm text-gray-900 leading-tight">${item.name}</h5>
+                            <div class="flex items-center gap-1">
+                                <span class="text-xs font-bold text-gray-500">السعر:</span>
+                                <span class="text-sm font-black text-brand-dark">${item.price} ج.م</span>
+                                <button onclick="editItemPrice('${item.id}')" class="text-xs text-blue-600 hover:underline font-bold mr-2">✏️ تعديل</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="toggleItemAvailability('${item.id}')" class="text-xs font-bold px-3 py-1.5 rounded-lg border ${item.available ? 'bg-green-50 text-green-700 border-green-300' : 'bg-red-50 text-red-700 border-red-300'}">
-                            ${item.available ? 'متاح' : 'غير متاح'}
+
+                    <div class="flex items-center justify-between border-t pt-2 text-xs">
+                        <button onclick="toggleItemAvailability('${item.id}')" class="font-bold px-3 py-1.5 rounded-lg border transition-colors ${item.available ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100' : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'}">
+                            ${item.available ? '🟢 متاح للطلب' : '🔴 غير متاح'}
                         </button>
-                        <button onclick="deleteMenuItem('${item.id}')" class="text-red-500 hover:text-red-700 text-xs p-1">🗑️</button>
+                        <button onclick="deleteMenuItem('${item.id}')" class="text-red-500 hover:text-red-700 font-bold p-1">🗑️ حذف</button>
                     </div>
                 </div>
-            `).join('');
-        }
+            `).join('')}
+        </div>
+    `;
+}
 
-        function toggleItemAvailability(itemId) {
-            const item = menuItems.find(i => i.id === itemId);
-            if (item) {
-                item.available = !item.available;
-                saveMenuState();
-                renderAdminMenuManagement();
-                renderMenu();
-            }
+// دالة تغيير الفئة داخل لوحة التحكم
+function filterAdminCategory(catId) {
+    adminActiveCategory = catId;
+    renderAdminMenuManagement();
+}
+
+// دالة تغيير التوفر (متاح / غير متاح)
+function toggleItemAvailability(itemId) {
+    const item = menuItems.find(i => i.id === itemId);
+    if (item) {
+        item.available = !item.available;
+        renderAdminMenuManagement();
+        renderMenu(); // تحديث المنيو للعميل تلقائياً
+    }
+}
+
+// دالة تعديل السعر المباشر
+function editItemPrice(itemId) {
+    const item = menuItems.find(i => i.id === itemId);
+    if (item) {
+        const newPrice = prompt(`تعديل سعر (${item.name}):`, item.price);
+        if (newPrice !== null && !isNaN(newPrice) && newPrice > 0) {
+            item.price = parseFloat(newPrice);
+            renderAdminMenuManagement();
+            renderMenu(); // تحديث المنيو للعميل تلقائياً
         }
+    }
+}
 
         function deleteMenuItem(itemId) {
             if (confirm("هل أنت تأكد من حذف هذا الصنف من المنيو؟")) {
