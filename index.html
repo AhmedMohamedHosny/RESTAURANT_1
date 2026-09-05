@@ -137,7 +137,22 @@ body {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
     50% { transform: translateY(-10px) rotate(1deg); }
 }
+/* إظهار النص باللون الأسود الواضح أثناء الكتابة وفي المراجعة */
+input, textarea, select {
+    color: #111827 !important;
+    background-color: #ffffff !important;
+}
 
+#checkout-modal span, 
+#checkout-modal p, 
+#checkout-modal strong {
+    color: #1f2937 !important;
+}
+
+#rev-name, #rev-phone, #rev-type, #rev-address {
+    color: #000000 !important;
+    font-weight: 800 !important;
+}
 /* 7. هيدر زجاجي احترافي بلور */
 header {
     background: rgba(13, 15, 18, 0.85) !important;
@@ -155,29 +170,31 @@ header {
     size: auto;
     margin: 0;
 }
+@page {
+    size: 80mm auto;
+    margin: 0;
+}
 @media print {
     html, body {
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
         background: #fff !important;
-        height: auto !important;
-        overflow: visible !important;
     }
     body * { 
-        visibility: hidden !important; 
+        display: none !important; 
     }
     #printable-receipt, #printable-receipt * { 
+        display: block !important; 
         visibility: visible !important; 
     }
     #printable-receipt {
-        display: block !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
-        width: 80mm !important;
-        margin: 0 !important;
+        width: 100% !important;
         padding: 10px !important;
         color: #000 !important;
-        background: #fff !important;
-        direction: rtl !important;
         font-family: monospace, sans-serif !important;
     }
 }
@@ -691,9 +708,6 @@ header {
                 <button id="admin-tab-menu" onclick="switchAdminSubTab('menu')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🍔 إدارة المنيو والوفرة
                 </button>
-<button id="admin-tab-drivers" onclick="switchAdminSubTab('drivers')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-    🛵 حسابات وتعيين الطيارين
-</button>
 <button id="admin-tab-blacklist" onclick="switchAdminSubTab('blacklist')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
     🚫 القائمة السوداء (المحظورين)
 </button>
@@ -1521,7 +1535,7 @@ function handleLogoClick() {
         }
 
 function switchAdminSubTab(tab) {
-    const tabs = ['orders', 'menu', 'drivers', 'blacklist'];
+    const tabs = ['orders', 'menu', 'blacklist'];
     tabs.forEach(t => {
         const btn = document.getElementById(`admin-tab-${t}`);
         const view = document.getElementById(`admin-view-${t}`);
@@ -1531,7 +1545,6 @@ function switchAdminSubTab(tab) {
 
     if (tab === 'menu') renderAdminMenuManagement();
     if (tab === 'blacklist') renderBlacklistManagement();
-    if (tab === 'drivers') renderDriversAccount();
 }
 
 // عرض الطيارين وتوضيح تفاصيل كل أوردر بالكامل
