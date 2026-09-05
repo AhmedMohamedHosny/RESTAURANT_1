@@ -30,36 +30,156 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #FAFAFA; color: #1F2937; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes cartShake {
+<style>
+/* =========================================================
+   تأثيرات الفخامة والـ 3D الخاصة بمطعم عجيبة الفاخر
+   ========================================================= */
+
+/* 1. خلفيات متدرجة فاخرة مع إضاءة ذهبية */
+body {
+    background-color: #0d0f12;
+    color: #e5e7eb;
+    font-family: 'Tajawal', sans-serif;
+    overflow-x: hidden;
+}
+
+/* 2. تأثير الزجاج الـ 3D مع انعكاس ذهبي لكروت الطعام (Glassmorphic 3D Cards) */
+.food-card-3d {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    border-radius: 1.25rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.food-card-3d::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.food-card-3d:hover {
+    transform: translateY(-10px) rotateX(4deg) rotateY(-2deg) scale(1.02);
+    border-color: rgba(245, 158, 11, 0.8);
+    box-shadow: 0 20px 40px -15px rgba(245, 158, 11, 0.3), 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.food-card-3d:hover::before {
+    opacity: 1;
+}
+
+/* 3. صور الوجبات ثلاثية الأبعاد وبروز الصورة عند الـ Hover */
+.food-card-3d img {
+    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), filter 0.5s ease;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
+}
+
+.food-card-3d:hover img {
+    transform: scale(1.1) rotate(2deg) translateY(-5px);
+    filter: drop-shadow(0 15px 25px rgba(245, 158, 11, 0.4));
+}
+
+/* 4. أزرار ذهبية 3D وتأثيرات الضغط الجبارة (3D Golden Glowing Buttons) */
+.btn-gold-3d {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #0d0f12;
+    font-weight: 900;
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 6px 0px #b45309, 0 10px 20px rgba(245, 158, 11, 0.4);
+    transition: all 0.2s ease;
+    position: relative;
+    top: 0;
+}
+
+.btn-gold-3d:hover {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    box-shadow: 0 8px 0px #b45309, 0 15px 25px rgba(245, 158, 11, 0.6);
+    transform: translateY(-2px);
+}
+
+.btn-gold-3d:active {
+    top: 4px;
+    box-shadow: 0 2px 0px #b45309, 0 5px 10px rgba(245, 158, 11, 0.4);
+}
+
+/* 5. شارات ووسامات متوهجة (Glowing Badges) */
+.badge-glow {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+    animation: pulseGlow 2.5s infinite alternate;
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.2); }
+    100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+}
+
+/* 6. حركة طفو إبداعية للوجبات والشعارات (Floating Animation) */
+.floating-element {
+    animation: floatAnim 4s ease-in-out infinite;
+}
+
+@keyframes floatAnim {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+/* 7. هيدر زجاجي احترافي بلور */
+header {
+    background: rgba(13, 15, 18, 0.85) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+
+/* 8. إخفاء البون الحراري من الشاشة العادية */
+#printable-receipt {
+    display: none;
+}
+
+@media print {
+    body * { visibility: hidden !important; }
+    #printable-receipt, #printable-receipt * { visibility: visible !important; }
+    #printable-receipt {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        padding: 5mm !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        color: #000 !important;
+        background: #fff !important;
+        direction: rtl !important;
+        text-align: right !important;
+    }
+}
+    /* تأثير اهتزاز وتكبير زر السلة عند إضافة صنف */
+@keyframes cartShake {
     0% { transform: scale(1); }
-    25% { transform: scale(1.2) rotate(15deg); }
-    50% { transform: scale(1.2) rotate(-15deg); }
-    75% { transform: scale(1.2) rotate(10deg); }
+    25% { transform: scale(1.2) rotate(-10deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+    75% { transform: scale(1.2) rotate(-5deg); }
     100% { transform: scale(1); }
 }
 .cart-shake {
-    animation: cartShake 0.4s ease-in-out !important;
+    animation: cartShake 0.4s ease-in-out;
 }
-        /* تنسيق بون الطباعة الحرارية 80mm */
-@media print {
-    body * { visibility: hidden; }
-    #printable-receipt, #printable-receipt * { visibility: visible; }
-    #printable-receipt {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 80mm;
-        padding: 5mm;
-        font-family: monospace;
-        color: #000;
-        background: #fff;
-    }
-}
-    </style>
+</style>
 </head>
 <body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
 
@@ -172,7 +292,61 @@
                 <div id="offers-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
         </section>
+<!-- قسم لماذا تختار مطعم عجيبة -->
+        <section class="py-12 bg-gray-900 text-white border-y border-amber-500/20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h3 class="text-3xl font-black text-brand-gold mb-8">ليه تطلب من عجيبه؟ 🤔</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-gray-800/60 p-6 rounded-2xl border border-amber-500/10 hover:border-brand-gold transition-colors">
+                        <span class="text-4xl block mb-3">🚀</span>
+                        <h4 class="font-bold text-lg mb-1">توصيل صاروخي</h4>
+                        <p class="text-xs text-gray-400">أكلك بيوصلك سخن ومقرمش في أسرع وقت ممكن.</p>
+                    </div>
+                    <div class="bg-gray-800/60 p-6 rounded-2xl border border-amber-500/10 hover:border-brand-gold transition-colors">
+                        <span class="text-4xl block mb-3">🥩</span>
+                        <h4 class="font-bold text-lg mb-1">لحوم طازجة 100%</h4>
+                        <p class="text-xs text-gray-400">نستخدم أجود أنواع اللحوم والدواجن البلدي الطازجة.</p>
+                    </div>
+                    <div class="bg-gray-800/60 p-6 rounded-2xl border border-amber-500/10 hover:border-brand-gold transition-colors">
+                        <span class="text-4xl block mb-3">🍕</span>
+                        <h4 class="font-bold text-lg mb-1">مكس أجبان فاخر</h4>
+                        <p class="text-xs text-gray-400">موتزاريلا طبيعية وغنية مع خلطة عجيبة الخاصة.</p>
+                    </div>
+                    <div class="bg-gray-800/60 p-6 rounded-2xl border border-amber-500/10 hover:border-brand-gold transition-colors">
+                        <span class="text-4xl block mb-3">💯</span>
+                        <h4 class="font-bold text-lg mb-1">نظافة وجودة معتمدة</h4>
+                        <p class="text-xs text-gray-400">أعلى معايير النظافة والجودة في تحضير كل وجبة.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
+        <!-- قسم آراء وتقييمات العملاء -->
+        <section class="py-12 bg-amber-50/30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-8">
+                    <h3 class="text-3xl font-black text-brand-dark">رأي عيلة عجيبة فينا ⭐</h3>
+                    <p class="text-gray-500 text-sm mt-1">آراء زبايننا الكرام في البدرشين والشرقية والغربية</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
+                        <div class="flex text-amber-400 text-sm gap-1">★★★★★</div>
+                        <p class="text-xs text-gray-700 leading-relaxed">"أحلى كريب قنبلة أكلته في البدرشين بجد! الحشو مليان والخدمة سريعة جداً تسلم إيدكم."</p>
+                        <span class="text-xs font-bold text-brand-dark block">- أسامة محمود</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
+                        <div class="flex text-amber-400 text-sm gap-1">★★★★★</div>
+                        <p class="text-xs text-gray-700 leading-relaxed">"البيتزا التشيكن رانش عندهم ملهاش حل، والأكل بيوصل سخن كأنك قاعد في المحل."</p>
+                        <span class="text-xs font-bold text-brand-dark block">- مريم جمال</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
+                        <div class="flex text-amber-400 text-sm gap-1">★★★★★</div>
+                        <p class="text-xs text-gray-700 leading-relaxed">"الصواريخ والوافل خطيرين، وسرعة التوصيل بجد عجيبة زي اسم المحل!"</p>
+                        <span class="text-xs font-bold text-brand-dark block">- إسلام خالد</span>
+                    </div>
+                </div>
+            </div>
+        </section>
         <!-- Digital Menu Section -->
         <section id="menu-section" class="py-16 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -228,13 +402,14 @@
         </div>
         <p class="text-brand-gold font-medium text-sm">إن أرضيناك تحدث عنا .. وإن لم نرضيك تحدث إلينا ❤️</p>
 
-<div class="pt-4 border-t border-gray-900 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500">
-            <p>© جميع الحقوق محفوظة لمطعم عجيبه 2026</p>
+        <div class="pt-4 border-t border-gray-900 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500 font-sans">
+            <p>© 2026 AGEEBA Restaurant. All Rights Reserved.</p>
             
             <p class="flex items-center gap-1 font-bold">
-                Designed & Developed by 
-                <a href="https://wa.me/201101579399" target="_blank" class="text-brand-gold hover:underline font-black flex items-center gap-1">
-                    Ahmed Mohamed <i class="fa-brands fa-whatsapp text-green-500 text-sm"></i>
+                <span>Designed & Developed by</span>
+                <a href="https://wa.me/201101579399" target="_blank" class="text-brand-gold hover:underline font-black inline-flex items-center gap-1 ml-1">
+                    <i class="fa-brands fa-whatsapp text-green-500 text-sm"></i>
+                    Ahmed Mohamed
                 </a>
             </p>
         </div>
@@ -728,52 +903,54 @@
             renderMenuTabs();
             renderMenu();
         }
+function renderMenu(itemsToRender = null) {
+    const container = document.getElementById('menu-grid');
+    let list = itemsToRender || menuItems;
 
-        function renderMenu(itemsToRender = null) {
-            const container = document.getElementById('menu-grid');
-            let list = itemsToRender || menuItems;
+    if (activeCategory !== 'الكل' && !itemsToRender) {
+        list = list.filter(item => item.category === activeCategory);
+    }
 
-            if (activeCategory !== 'الكل' && !itemsToRender) {
-                list = list.filter(item => item.category === activeCategory);
-            }
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full text-center py-12 space-y-3">
+                <span class="text-4xl">🔍</span>
+                <p class="text-gray-500 font-bold">لا توجد أصناف حالياً في هذه الفئة.</p>
+            </div>
+        `;
+        return;
+    }
 
-            if (list.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full text-center py-12 space-y-3">
-                        <span class="text-4xl">🔍</span>
-                        <p class="text-gray-500 font-bold">لا توجد أصناف حالياً في هذه الفئة.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = list.map(item => `
-                <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between ${!item.available ? 'opacity-60' : ''}">
-                    <div>
-                        <div class="relative">
-                            <img src="${item.image}" alt="${item.name}" class="w-full h-44 object-cover">
-                            ${!item.available ? '<span class="absolute top-3 right-3 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow">غير متاح</span>' : ''}
-                        </div>
-                        <div class="p-4 space-y-2">
-                            <h4 class="font-black text-gray-900 text-base leading-tight">${item.name}</h4>
-                            <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed">${item.description}</p>
-                        </div>
-                    </div>
-                    <div class="p-4 border-t border-gray-50 flex items-center justify-between">
-                        <span class="text-lg font-black text-brand-dark">${item.price} <span class="text-xs font-normal">ج.م</span></span>
-                        ${item.available ? `
-                            <button onclick="openProductModal('${item.id}')" class="bg-amber-50 text-brand-dark border border-brand-gold/40 hover:bg-brand-dark hover:text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all">
-                                + أضف للسلة
-                            </button>
-                        ` : `
-                            <button disabled class="bg-gray-200 text-gray-400 text-xs font-bold px-3 py-2 rounded-xl cursor-not-allowed">
-                                غير متاح
-                            </button>
-                        `}
-                    </div>
+    container.innerHTML = list.map(item => `
+        <div class="food-card-3d p-4 flex flex-col justify-between h-full group ${!item.available ? 'opacity-60' : ''}">
+            <div>
+                <div class="relative overflow-hidden rounded-xl mb-3">
+                    <img src="${item.image}" alt="${item.name}" class="w-full h-44 object-cover rounded-xl">
+                    ${!item.available ? '<span class="absolute top-3 right-3 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow z-10">غير متاح</span>' : ''}
+                    <span class="badge-glow absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full z-10">
+                        ${item.category}
+                    </span>
                 </div>
-            `).join('');
-        }
+                <div class="space-y-2">
+                    <h4 class="font-black text-white text-base leading-tight group-hover:text-amber-400 transition-colors">${item.name}</h4>
+                    <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed">${item.description}</p>
+                </div>
+            </div>
+            <div class="pt-4 mt-2 border-t border-amber-500/10 flex items-center justify-between">
+                <span class="text-xl font-black text-amber-400">${item.price} <span class="text-xs font-normal text-gray-300">ج.م</span></span>
+                ${item.available ? `
+                    <button onclick="openProductModal('${item.id}')" class="btn-gold-3d text-xs px-4 py-2.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cart-plus"></i> أضف للسلة
+                    </button>
+                ` : `
+                    <button disabled class="bg-gray-800 text-gray-500 text-xs font-bold px-3 py-2 rounded-xl cursor-not-allowed">
+                        غير متاح
+                    </button>
+                `}
+            </div>
+        </div>
+    `).join('');
+}
         // جرس المطبخ الصوتي (تنبيه الطلب الجديد)
 const kitchenChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 let chimeInterval = null;
@@ -1592,5 +1769,15 @@ function editItemPrice(itemId) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
+    <!-- Floating WhatsApp Button -->
+<a href="https://wa.me/201142400434?text=%D0%A3%D0%BB%D0%B0%D0%BC%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A8%D9%87" 
+   target="_blank" 
+   class="fixed bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95 group"
+   title="اطلب عبر الواتساب مباشر">
+    <i class="fa-brands fa-whatsapp text-3xl"></i>
+    <span class="absolute left-16 bg-gray-900 text-white text-xs font-bold py-1.5 px-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+        اطلب مباشر عبر الواتساب 💬
+    </span>
+</a>
 </body>
 </html>
