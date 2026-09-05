@@ -678,13 +678,53 @@ header {
                 <button id="admin-tab-menu" onclick="switchAdminSubTab('menu')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🍔 إدارة المنيو والوفرة
                 </button>
+                <button id="admin-tab-kds" onclick="switchAdminSubTab('kds')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+    👨‍🍳 شاشة المطبخ (KDS)
+</button>
+<button id="admin-tab-drivers" onclick="switchAdminSubTab('drivers')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+    🛵 حسابات الطيارين
+</button>
+<button id="admin-tab-blacklist" onclick="switchAdminSubTab('blacklist')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+    🚫 القائمة السوداء
+</button>
+<button id="admin-tab-report" onclick="switchAdminSubTab('report')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+    📊 تقرير اليوم (Z-Report)
+</button>
             </div>
 
             <div id="admin-view-orders" class="space-y-4">
                 <h3 class="text-xl font-bold text-gray-800">الطلبات الواردة (تحديث تلقائي)</h3>
                 <div id="admin-orders-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
+<!-- قسم القائمة السوداء واختيار فك الحظر -->
+<div id="admin-view-blacklist" class="hidden space-y-4">
+    <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-xl font-bold text-gray-800">إدارة الأرقام المحظورة (Blacklist)</h3>
+        <button onclick="manualAddBlacklist()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs">+ حظر رقم يدوي</button>
+    </div>
+    <div id="blacklist-items-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+</div>
 
+<!-- قسم شاشة المطبخ KDS -->
+<div id="admin-view-kds" class="hidden space-y-4">
+    <h3 class="text-xl font-bold text-gray-800">شاشة عرض المطبخ المباشرة 👨‍🍳</h3>
+    <div id="kds-orders-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+</div>
+
+<!-- قسم حسابات وتعيين الطيارين -->
+<div id="admin-view-drivers" class="hidden space-y-4">
+    <h3 class="text-xl font-bold text-gray-800">حسابات وتكتات الطيارين 🛵</h3>
+    <div id="drivers-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+</div>
+
+<!-- قسم تقرير الوردية Z-Report -->
+<div id="admin-view-report" class="hidden space-y-4">
+    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm max-w-xl mx-auto space-y-4 text-center">
+        <h3 class="text-2xl font-black text-brand-dark">تقرير نهاية اليوم (Z-Report) 🧾</h3>
+        <div id="z-report-content" class="text-right space-y-2 text-sm border-t border-b py-4"></div>
+        <button onclick="window.print()" class="w-full bg-brand-dark text-white font-bold py-3 rounded-xl">🖨️ طباعة التقرير المالي</button>
+    </div>
+</div>
             <div id="admin-view-menu" class="hidden space-y-6">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xl font-bold text-gray-800">إدارة الوجبات والتوفر بالمطعم</h3>
@@ -696,6 +736,7 @@ header {
             </div>
         </div>
     </div>
+    
 
     <!-- MAIN JAVASCRIPT APPLICATION LOGIC -->
     <script>
@@ -1483,25 +1524,130 @@ function handleLogoClick() {
             document.getElementById('admin-dashboard-modal').classList.add('hidden');
         }
 
-        function switchAdminSubTab(tab) {
-            const btnOrders = document.getElementById('admin-tab-orders');
-            const btnMenu = document.getElementById('admin-tab-menu');
-            const viewOrders = document.getElementById('admin-view-orders');
-            const viewMenu = document.getElementById('admin-view-menu');
+function switchAdminSubTab(tab) {
+    const tabs = ['orders', 'menu', 'kds', 'drivers', 'blacklist', 'report'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`admin-tab-${t}`);
+        const view = document.getElementById(`admin-view-${t}`);
+        if (btn) btn.className = (t === tab) ? "font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg" : "font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg";
+        if (view) view.classList.toggle('hidden', t !== tab);
+    });
 
-            if (tab === 'orders') {
-                btnOrders.className = "font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg";
-                btnMenu.className = "font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg";
-                viewOrders.classList.remove('hidden');
-                viewMenu.classList.add('hidden');
-            } else {
-                btnMenu.className = "font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg";
-                btnOrders.className = "font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg";
-                viewMenu.classList.remove('hidden');
-                viewOrders.classList.add('hidden');
-                renderAdminMenuManagement();
-            }
+    if (tab === 'menu') renderAdminMenuManagement();
+    if (tab === 'blacklist') renderBlacklistManagement();
+    if (tab === 'kds') renderKDS();
+    if (tab === 'drivers') renderDriversAccount();
+    if (tab === 'report') renderZReport();
+}
+
+// 1. إدارة القائمة السوداء ورؤيتها وفك الحظر
+function renderBlacklistManagement() {
+    const container = document.getElementById('blacklist-items-container');
+    const list = getBlacklist();
+    
+    if (list.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد أرقام محظورة حالياً 🎉</p>`;
+        return;
+    }
+
+    container.innerHTML = list.map(phone => `
+        <div class="bg-white p-4 rounded-xl border border-red-200 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-xs text-red-600 font-bold block">رقم محظور 🚫</span>
+                <span class="text-base font-black text-gray-900" dir="ltr">${phone}</span>
+            </div>
+            <button onclick="removeFromBlacklist('${phone}')" class="bg-green-600 hover:bg-green-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors">
+                🔓 فك الحظر
+            </button>
+        </div>
+    `).join('');
+}
+
+function removeFromBlacklist(phone) {
+    let list = getBlacklist();
+    list = list.filter(p => p !== phone);
+    localStorage.setItem('ageeba_blacklist', JSON.stringify(list));
+    alert(`تم فك حظر الرقم (${phone}) بنجاح ويمكنه الطلب الآن.`);
+    renderBlacklistManagement();
+}
+
+function manualAddBlacklist() {
+    const phone = prompt("أدخل رقم الهاتف المراد حظره:");
+    if (phone && phone.trim()) {
+        addToBlacklist(phone.trim());
+        renderBlacklistManagement();
+    }
+}
+
+// 2. شاشة المطبخ KDS
+function renderKDS() {
+    const container = document.getElementById('kds-orders-container');
+    const activeOrders = orders.filter(o => o.status === 'ACCEPTED' || o.status === 'PREPARING');
+    
+    if (activeOrders.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد أوردرات في المطبخ الآن 👨‍🍳</p>`;
+        return;
+    }
+
+    container.innerHTML = activeOrders.map(order => `
+        <div class="bg-amber-50 p-4 rounded-xl border-2 border-amber-400 space-y-3">
+            <div class="flex justify-between items-center border-b border-amber-200 pb-2">
+                <span class="font-black text-brand-dark">#${order.id}</span>
+                <span class="text-xs font-bold text-gray-600">${order.createdAt}</span>
+            </div>
+            <div class="space-y-1 text-sm font-bold">
+                ${order.items.map(i => `<div class="flex justify-between"><span>• ${i.name} (${i.selectedSize})</span> <span>×${i.quantity}</span></div>`).join('')}
+            </div>
+            <button onclick="updateOrderStatus('${order.id}', 'OUT_FOR_DELIVERY'); renderKDS();" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg text-xs">جاهز للطيار 🛵</button>
+        </div>
+    `).join('');
+}
+
+// 3. حسابات الطيارين ورسوم التوصيل
+function renderDriversAccount() {
+    const container = document.getElementById('drivers-list-container');
+    const outOrders = orders.filter(o => o.status === 'OUT_FOR_DELIVERY' || o.status === 'DELIVERED');
+    
+    container.innerHTML = `
+        <div class="bg-white p-4 rounded-xl border shadow-sm space-y-3 col-span-full">
+            <h4 class="font-bold text-gray-800">تعيين أوردر لطيار:</h4>
+            ${outOrders.map(o => `
+                <div class="flex items-center justify-between border-b pb-2 text-xs">
+                    <span>#${o.id} - ${o.customerName} (${o.total} ج.م)</span>
+                    <button onclick="assignDriver('${o.id}')" class="bg-brand-dark text-white font-bold px-3 py-1 rounded-lg">
+                        ${o.driver ? 'الطيار: ' + o.driver : '➕ تعيين طيار'}
+                    </button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function assignDriver(orderId) {
+    const driverName = prompt("أدخل اسم الطيار / المندوب:");
+    if (driverName) {
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            order.driver = driverName;
+            saveOrdersState();
+            renderDriversAccount();
         }
+    }
+}
+
+// 4. تقرير الـ Z-Report المالي
+function renderZReport() {
+    const container = document.getElementById('z-report-content');
+    const totalRev = orders.reduce((sum, o) => sum + o.total, 0);
+    const delFees = orders.reduce((sum, o) => sum + o.deliveryFee, 0);
+
+    container.innerHTML = `
+        <p class="flex justify-between"><span>إجمالي الطلبات:</span> <strong>${orders.length} أوردر</strong></p>
+        <p class="flex justify-between"><span>إجمالي المبيعات (شامل التوصيل):</span> <strong class="text-green-700">${totalRev} ج.م</strong></p>
+        <p class="flex justify-between"><span>إجمالي إيرادات الدليفري:</span> <strong>${delFees} ج.م</strong></p>
+        <p class="flex justify-between"><span>صافي دخل المطعم:</span> <strong class="text-brand-dark text-base">${totalRev - delFees} ج.م</strong></p>
+    `;
+}
 
         function renderAdminDashboard() {
             const newCount = orders.filter(o => o.status === 'NEW').length;
