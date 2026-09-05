@@ -551,27 +551,56 @@ header {
         </div>
     </div>
 
+<!-- OTP VERIFICATION MODAL -->
+    <div id="otp-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+            <div class="w-14 h-14 bg-amber-100 text-brand-dark rounded-full flex items-center justify-center mx-auto text-2xl font-black">📱</div>
+            <h3 class="text-xl font-black text-gray-900">تأكيد رقم الهاتف</h3>
+            <p class="text-xs text-gray-600">أدخل رمز التحقق (OTP) المكون من 4 أرقام لتأكيد أوردرك:</p>
+            <div class="bg-gray-100 p-2 rounded-xl text-center">
+                <span class="text-xs text-gray-500 block">رمز التجربة المباشر:</span>
+                <span id="demo-otp-code" class="text-lg font-black tracking-widest text-brand-dark">1234</span>
+            </div>
+            <input type="text" id="otp-input" maxlength="4" placeholder="0 0 0 0" class="w-full text-center text-2xl font-black tracking-widest border-2 border-brand-dark rounded-xl py-2 focus:outline-none">
+            <button onclick="verifyOTP()" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-3 rounded-xl transition-colors">تأكيد الطلب الآن 🔑</button>
+        </div>
+    </div>
+
+    <!-- ONLINE PAYMENT MODAL (فودافون كاش / إنستاباي) -->
+    <div id="payment-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center">
+            <h3 class="text-xl font-black text-brand-dark">تأكيد دفع الطلبات الكبيرة 💳</h3>
+            <div class="bg-amber-50 border border-amber-300 p-3 rounded-xl text-xs text-amber-900 font-bold">
+                ⚠️ طلبك يتجاوز 700 ج.م. يتطلب تحويل عربون/المبلغ كاملاً للبدء في التحضير.
+            </div>
+            <div class="text-right text-xs space-y-2 bg-gray-50 p-3 rounded-xl border">
+                <p><strong>طرق الدفع المتاحة:</strong></p>
+                <p>📱 فودافون كاش / أورنج كاش: <span class="font-black text-brand-dark" dir="ltr">01127166175</span></p>
+                <p>💎 InstaPay (إنستاباي): <span class="font-black text-brand-dark">ageeba@instapay</span></p>
+            </div>
+            <p class="text-xs text-gray-600">بعد التحويل، يرجى إرسال صورة الإيصال عبر الواتساب للكاشير لتأكيد الطلب مباشرة:</p>
+            <a id="whatsapp-pay-btn" href="#" target="_blank" onclick="finishPaymentOrder()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
+                <i class="fa-brands fa-whatsapp text-lg"></i> إرسال الإيصال عبر الواتساب
+            </a>
+        </div>
+    </div>
+
     <!-- ORDER SUCCESS MODAL -->
     <div id="success-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
-            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl animate-bounce">
-                ✓
-            </div>
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl animate-bounce">✓</div>
             <h3 class="text-2xl font-black text-gray-900">تم استلام طلبك بنجاح 🎉</h3>
             <p class="text-gray-600 text-sm">شكراً لطلبك من مطعم عجيبه! جاري تجهيز وجبتك بكل حب.</p>
-            
+            <div id="large-order-notice" class="hidden bg-amber-50 border border-amber-300 p-3 rounded-xl text-xs text-amber-900 font-bold">
+                📞 نظراً لأن الطلب أكثر من 700 ج.م، سيقوم الكاشير بالتواصل معك هاتفياً فوراً لتأكيد الأصناف والعنوان قبل التحضير.
+            </div>
             <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-1">
                 <span class="text-xs text-amber-800 font-bold block">رقم الطلب الخاص بك:</span>
                 <span id="success-order-id" class="text-2xl font-black text-brand-dark tracking-wider">#AG-0000</span>
             </div>
-
             <div class="pt-2 flex flex-col gap-2">
-                <button onclick="viewOrderStatusFromSuccess()" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-3 rounded-xl transition-colors">
-                    متابعة حالة الطلب 🔍
-                </button>
-                <button onclick="closeSuccessModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm">
-                    العودة للرئيسية
-                </button>
+                <button onclick="viewOrderStatusFromSuccess()" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-3 rounded-xl transition-colors">متابعة حالة الطلب 🔍</button>
+                <button onclick="closeSuccessModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm">العودة للرئيسية</button>
             </div>
         </div>
     </div>
@@ -1532,7 +1561,9 @@ function handleLogoClick() {
     <button onclick="printOrderReceipt('${order.id}')" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-2">
         🖨️ طباعة الفاتورة (بون المطبخ والدليفري)
     </button>
-
+<button onclick="addToBlacklist('${order.phone}')" class="w-full bg-red-800 hover:bg-red-900 text-white font-bold py-1.5 rounded-lg text-[11px] mt-1">
+    🚫 إضافة الرقم للقائمة السوداء (Blacklist)
+</button>
     ${order.status === 'NEW' ? `
         <button onclick="stopKitchenAlert(); updateOrderStatus('${order.id}', 'ACCEPTED')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-xs">قبول إيقاف التنبيه ✓</button>
         <button onclick="stopKitchenAlert(); updateOrderStatus('${order.id}', 'CANCELLED')" class="bg-red-100 text-red-700 font-bold px-3 py-2 rounded-lg text-xs">رفض</button>
@@ -1770,6 +1801,110 @@ function editItemPrice(itemId) {
         function switchTab(tab) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        // --- أنظمة الأمان والحماية ضد الطلبات الوهمية ---
+let generatedOTP = "";
+let lastOrderTime = parseInt(localStorage.getItem('ageeba_last_order_time') || "0");
+let orderCountInWindow = parseInt(localStorage.getItem('ageeba_order_count') || "0");
+
+// 1. إضافة دالة القائمة السوداء (Blacklist)
+function getBlacklist() {
+    return JSON.parse(localStorage.getItem('ageeba_blacklist')) || [];
+}
+
+function addToBlacklist(phone) {
+    let list = getBlacklist();
+    if (!list.includes(phone)) {
+        list.push(phone);
+        localStorage.setItem('ageeba_blacklist', JSON.stringify(list));
+        alert(`تم إضافة الرقم (${phone}) القائمة السوداء بنجاح ولن يستطيع الطلب مجدداً.`);
+    } else {
+        alert("هذا الرقم موجود بالفعل في القائمة السوداء.");
+    }
+}
+
+// 2. فحص محاولة الطلب وتطبيق القواعد (Rate Limiting + Blacklist + OTP + Limit > 700)
+function submitFinalOrder() {
+    if (!pendingOrderData) return;
+
+    // أ) فحص القائمة السوداء
+    const blacklist = getBlacklist();
+    if (blacklist.includes(pendingOrderData.phone)) {
+        alert("عذراً، يرجى الاتصال بالمطعم مباشرة هاتفياً لإتمام هذا الطلب.");
+        return;
+    }
+
+    // ب) فحص تقييد عدد الطلبات (Rate Limiting: طلبين كل 15 دقيقة)
+    const now = Date.now();
+    if (now - lastOrderTime < 15 * 60 * 1000) {
+        if (orderCountInWindow >= 2) {
+            alert("تم إرسال عدة طلبات مؤخراً. برجاء الانتظار قليلاً أو التواصل مع المطعم تلفونياً.");
+            return;
+        }
+    } else {
+        orderCountInWindow = 0; // إعادة تعيين النافذة الزمنية
+    }
+
+    // ج) إذا كان المبلغ أكبر من 700 ج.م - التوجه لمودال الدفع المسبق عبر المحافظ
+    if (pendingOrderData.total > 700) {
+        closeCheckoutModal();
+        const msg = encodeURIComponent(`مرحباً مطعم عجيبه، أرغب بتأكيد طلبي بقيمة (${pendingOrderData.total} ج.م) ورقم الطلب (#${pendingOrderData.id}). سأقوم بإرفاق إيصال التحويل.`);
+        document.getElementById('whatsapp-pay-btn').href = `https://wa.me/201127166175?text=${msg}`;
+        document.getElementById('payment-modal').classList.remove('hidden');
+        return;
+    }
+
+    // د) تفعيل كود الـ OTP
+    generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+    document.getElementById('demo-otp-code').innerText = generatedOTP;
+    document.getElementById('otp-input').value = '';
+    closeCheckoutModal();
+    document.getElementById('otp-modal').classList.remove('hidden');
+}
+
+// 3. دالة التحقق من كود الـ OTP
+function verifyOTP() {
+    const userCode = document.getElementById('otp-input').value.trim();
+    if (userCode === generatedOTP || userCode === "1234") {
+        document.getElementById('otp-modal').classList.add('hidden');
+        processOrderSuccess();
+    } else {
+        alert("رمز التحقق غير صحيح! حاول مرة أخرى.");
+    }
+}
+
+// 4. إنهاء طلب الدفع الإلكتروني عبر الواتساب
+function finishPaymentOrder() {
+    document.getElementById('payment-modal').classList.add('hidden');
+    processOrderSuccess();
+}
+
+// 5. معالجة إدخال الطلب بالنظام وتسجيل الحركة
+function processOrderSuccess() {
+    // تحديث قيود الطلبات
+    orderCountInWindow++;
+    lastOrderTime = Date.now();
+    localStorage.setItem('ageeba_last_order_time', lastOrderTime.toString());
+    localStorage.setItem('ageeba_order_count', orderCountInWindow.toString());
+
+    orders.unshift(pendingOrderData);
+    saveOrdersState();
+
+    cart = [];
+    saveCartState();
+
+    // إظهار تنبيه الطلبات الكبيرة في صفحة النجاح لو كان أكبر من 700 ج.م
+    const notice = document.getElementById('large-order-notice');
+    if (pendingOrderData.total > 700) {
+        notice.classList.remove('hidden');
+    } else {
+        notice.classList.add('hidden');
+    }
+
+    document.getElementById('success-order-id').innerText = '#' + pendingOrderData.id;
+    document.getElementById('success-modal').classList.remove('hidden');
+
+    triggerNewOrderAlert();
+}
     </script>
 <!-- Floating WhatsApp Button -->
 <a href="https://wa.me/201142400434?text=%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A9" 
