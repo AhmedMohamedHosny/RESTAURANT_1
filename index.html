@@ -611,10 +611,17 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
                         <label class="block text-xs font-bold text-gray-700 mb-1">الاسم بالكامل *</label>
                         <input type="text" id="cust-name" required placeholder="أحمد محمد" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">رقم الهاتف *</label>
-                        <input type="tel" id="cust-phone" required placeholder="011XXXXXXXX" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">رقم الهاتف الأساسي *</label>
+                            <input type="tel" id="cust-phone" required placeholder="011XXXXXXXX" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">رقم هاتف إضافي (إجباري) *</label>
+                            <input type="tel" id="cust-phone-2" required placeholder="010XXXXXXXX" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
+                        </div>
                     </div>
+                    
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">طريقة الاستلام</label>
                         <div class="grid grid-cols-2 gap-3">
@@ -1563,6 +1570,7 @@ function autoSaveCustomerInfo() {
     const data = {
         name: document.getElementById('cust-name')?.value || '',
         phone: document.getElementById('cust-phone')?.value || '',
+        phone2: document.getElementById('cust-phone-2')?.value || '',
         address: document.getElementById('cust-address')?.value || '',
         area: document.getElementById('cust-area')?.value || ''
     };
@@ -1573,6 +1581,7 @@ function loadSavedCustomerInfo() {
     const saved = JSON.parse(localStorage.getItem('ageeba_customer_data')) || {};
     if (saved.name && document.getElementById('cust-name')) document.getElementById('cust-name').value = saved.name;
     if (saved.phone && document.getElementById('cust-phone')) document.getElementById('cust-phone').value = saved.phone;
+    if (saved.phone2 && document.getElementById('cust-phone-2')) document.getElementById('cust-phone-2').value = saved.phone2;
     if (saved.address && document.getElementById('cust-address')) document.getElementById('cust-address').value = saved.address;
     if (saved.area && document.getElementById('cust-area')) document.getElementById('cust-area').value = saved.area;
 }
@@ -1581,11 +1590,22 @@ function loadSavedCustomerInfo() {
 function proceedToReview() {
     const name = document.getElementById('cust-name').value.trim();
     const phone = document.getElementById('cust-phone').value.trim();
+    const phone2 = document.getElementById('cust-phone-2').value.trim();
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const areaSelect = document.getElementById('cust-area');
     const areaName = areaSelect ? areaSelect.value : '';
     const addressDetails = document.getElementById('cust-address').value.trim();
     const notes = document.getElementById('cust-notes').value.trim();
+
+    // فحص إجبارية أدخال رقمين صحيحين
+    if (!phone || !phone2) {
+        alert("يرجى إدخال رقمين هاتف لإتمام الطلب!");
+        return;
+    }
+    if (phone === phone2) {
+        alert("يرجى إدخال رقمين هاتف مختلفين!");
+        return;
+    }
 
     // حفظ البيانات تلقائياً للمرات القادمة
     autoSaveCustomerInfo();
@@ -1596,16 +1616,17 @@ function proceedToReview() {
 
     const fullAddress = type === 'DELIVERY' ? `${areaName} - ${addressDetails}` : 'استلام من الفرع (البدرشين - ش عباس عناني)';
 
-    // حساب التاريخ والتوقيت المحلي بشكل دقيق
     const now = new Date();
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
 
+    const combinedPhones = `${phone} / ${phone2}`;
+
     pendingOrderData = {
         id: 'AG-' + Math.floor(1000 + Math.random() * 9000),
         customerName: name,
-        phone: phone,
+        phone: combinedPhones,
         type: type,
         address: fullAddress,
         notes: notes,
@@ -1620,12 +1641,12 @@ function proceedToReview() {
         deliveryFee: deliveryFee,
         total: total,
         status: 'NEW',
-        createdAtDate: `${yyyy}-${mm}-${dd}`, // تاريخ اليوم المحلي مضبوط (YYYY-MM-DD)
-        createdAt: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true }) // الوقت ص/م
+        createdAtDate: `${yyyy}-${mm}-${dd}`,
+        createdAt: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
     };
 
     document.getElementById('rev-name').innerText = name;
-    document.getElementById('rev-phone').innerText = phone;
+    document.getElementById('rev-phone').innerText = combinedPhones;
     document.getElementById('rev-type').innerText = type === 'DELIVERY' ? `توصيل دليفري (+${deliveryFee} ج.م)` : 'استلام من الفرع';
     
     if (type === 'DELIVERY') {
@@ -1661,7 +1682,7 @@ function submitFinalOrder() {
 
     // 1. فحص القائمة السوداء (Blacklist)
     const blacklist = getBlacklist();
-    if (blacklist.includes(pendingOrderData.phone)) {
+    if (blacklist.some(p => pendingOrderData.phone.includes(p))) {
         alert("عذراً، يرجى الاتصال بالمطعم مباشرة هاتفياً لإتمام هذا الطلب.");
         return;
     }
@@ -1684,7 +1705,7 @@ function submitFinalOrder() {
         `----------------------------------%0A` +
         `*رقم الطلب:* #${pendingOrderData.id}%0A` +
         `*الاسم:* ${pendingOrderData.customerName}%0A` +
-        `*الهاتف:* ${pendingOrderData.phone}%0A` +
+        `*أرقام الهاتف:* ${pendingOrderData.phone}%0A` +
         `*طريقة الاستلام:* ${pendingOrderData.type === 'DELIVERY' ? 'توصيل للمنزل 🛵' : 'استلام من الفرع 🏪'}%0A` +
         `*العنوان:* ${pendingOrderData.address}%0A` +
         (pendingOrderData.notes ? `*ملاحظات:* ${pendingOrderData.notes}%0A` : '') +
@@ -1695,12 +1716,43 @@ function submitFinalOrder() {
         `*التوصيل:* ${pendingOrderData.deliveryFee} ج.م%0A` +
         `*الإجمالي النهائي:* ${pendingOrderData.total} ج.م`;
 
-    // 4. فتح الواتساب تلقائياً للعميل برقم المطعم
-    window.open(`https://wa.me/201127166175?text=${fullWhatsAppMessage}`, '_blank');
-
-    // 5. إغلاق المودال وتسجيل الأوردر بالسيستم بنجاح
+    // 4. حفظ الطلب في سيستم الكاشير واللوحة أولاً
     closeCheckoutModal();
     processOrderSuccess();
+
+    // 5. فتح الواتساب تلقائياً للعميل
+    window.open(`https://wa.me/201127166175?text=${fullWhatsAppMessage}`, '_blank');
+}
+
+function processOrderSuccess() {
+    if (!pendingOrderData) return;
+
+    orderCountInWindow++;
+    lastOrderTime = Date.now();
+    localStorage.setItem('ageeba_last_order_time', lastOrderTime.toString());
+    localStorage.setItem('ageeba_order_count', orderCountInWindow.toString());
+
+    // جلب قائمة الطلبات الحالية وإضافة الطلب الجديد مباشرة للوحة الكاشير
+    orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    orders.unshift(pendingOrderData);
+    saveOrdersState();
+
+    cart = [];
+    saveCartState();
+
+    const notice = document.getElementById('large-order-notice');
+    if (pendingOrderData.total > 700) {
+        notice?.classList.remove('hidden');
+    } else {
+        notice?.classList.add('hidden');
+    }
+
+    document.getElementById('success-order-id').innerText = '#' + pendingOrderData.id;
+    document.getElementById('success-modal').classList.remove('hidden');
+
+    // تحديث لوحة التحكم مباشرة بالطلب الجديد
+    renderAdminDashboard();
+    triggerNewOrderAlert();
 }
 
         function closeSuccessModal() {
@@ -2428,33 +2480,7 @@ function finishPaymentOrder() {
     processOrderSuccess();
 }
 
-// 5. معالجة إدخال الطلب بالنظام وتسجيل الحركة
-function processOrderSuccess() {
-    // تحديث قيود الطلبات
-    orderCountInWindow++;
-    lastOrderTime = Date.now();
-    localStorage.setItem('ageeba_last_order_time', lastOrderTime.toString());
-    localStorage.setItem('ageeba_order_count', orderCountInWindow.toString());
 
-    orders.unshift(pendingOrderData);
-    saveOrdersState();
-
-    cart = [];
-    saveCartState();
-
-    // إظهار تنبيه الطلبات الكبيرة في صفحة النجاح لو كان أكبر من 700 ج.م
-    const notice = document.getElementById('large-order-notice');
-    if (pendingOrderData.total > 700) {
-        notice.classList.remove('hidden');
-    } else {
-        notice.classList.add('hidden');
-    }
-
-    document.getElementById('success-order-id').innerText = '#' + pendingOrderData.id;
-    document.getElementById('success-modal').classList.remove('hidden');
-
-    triggerNewOrderAlert();
-}
 function toggleDarkMode() {
     const isLight = document.body.classList.toggle('light-theme');
     const icon = document.getElementById('theme-icon');
