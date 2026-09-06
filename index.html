@@ -1702,30 +1702,38 @@ function renderAdminDashboard() {
     const filterSelect = document.getElementById('sales-time-filter');
     const filterValue = filterSelect ? filterSelect.value : 'all';
 
-    // 3. تعريف filteredOrders أولاً قبل أي استخدام له
+    // 3. فلترة الطلبات بأمان لمنع أي خطأ تاريخ
     const filteredOrders = orders.filter(order => {
-        const orderDate = new Date(order.createdAtDate || order.createdAt || order.date);
+        const dateRaw = order.createdAtDate || order.date;
+        let orderDateStr = dateRaw;
+
+        if (!orderDateStr || isNaN(new Date(orderDateStr).getTime())) {
+            orderDateStr = todayStr;
+        } else {
+            orderDateStr = new Date(orderDateStr).toISOString().split('T')[0];
+        }
+
+        const orderDateObj = new Date(orderDateStr);
         
         if (filterValue === 'today') {
-            return order.createdAtDate === todayStr || orderDate.toISOString().split('T')[0] === todayStr;
+            return orderDateStr === todayStr;
         } else if (filterValue === 'yesterday') {
             const yesterday = new Date(today);
             yesterday.setDate(today.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            return order.createdAtDate === yesterdayStr || orderDate.toISOString().split('T')[0] === yesterdayStr;
+            return orderDateStr === yesterday.toISOString().split('T')[0];
         } else if (filterValue === 'week') {
             const sevenDaysAgo = new Date(today);
             sevenDaysAgo.setDate(today.getDate() - 7);
-            return orderDate >= sevenDaysAgo;
+            return orderDateObj >= sevenDaysAgo;
         } else if (filterValue === 'month') {
             const thirtyDaysAgo = new Date(today);
             thirtyDaysAgo.setDate(today.getDate() - 30);
-            return orderDate >= thirtyDaysAgo;
+            return orderDateObj >= thirtyDaysAgo;
         }
         return true; // في حال اختيار 'all'
     });
 
-    // 4. تحديث الإحصائيات الآن بعد تعريف filteredOrders
+    // 4. تحديث الإحصائيات
     if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
     if (document.getElementById('stat-revenue')) {
         const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
@@ -1755,8 +1763,8 @@ function renderAdminDashboard() {
             itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
         }
 
-        const orderTime = new Date(order.createdAt || order.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-        const orderDateFormatted = new Date(order.createdAt || order.date).toLocaleDateString('ar-EG');
+        const orderTime = order.createdAt || 'الوقت غير محدد';
+        const orderDateFormatted = order.createdAtDate || todayStr;
 
         return `
         <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200">
