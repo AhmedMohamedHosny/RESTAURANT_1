@@ -1601,15 +1601,23 @@ function proceedToReview() {
     const addressDetails = document.getElementById('cust-address').value.trim();
     const notes = document.getElementById('cust-notes').value.trim();
 
-    // فحص إجبارية أدخال رقمين صحيحين
-    if (!phone || !phone2) {
-        alert("يرجى إدخال رقمين هاتف لإتمام الطلب!");
-        return;
-    }
-    if (phone === phone2) {
-        alert("يرجى إدخال رقمين هاتف مختلفين!");
-        return;
-    }
+// صيغة فحص أرقام الموبايل المصرية (11 رقماً ويبدأ بـ 010 أو 011 أو 012 أو 015)
+const egyptPhoneRegex = /^01[0125]\d{8}$/;
+
+if (!egyptPhoneRegex.test(phone)) {
+    alert("يرجى إدخال رقم هاتف أساسي صحيح مكون من 11 رقماً (مثال: 01123456789)!");
+    return;
+}
+
+if (!egyptPhoneRegex.test(phone2)) {
+    alert("يرجى إدخال رقم هاتف إضافي صحيح مكون من 11 رقماً (مثال: 01012345678)!");
+    return;
+}
+
+if (phone === phone2) {
+    alert("يرجى إدخال رقمين هاتف مختلفين!");
+    return;
+}
 
     // حفظ البيانات تلقائياً للمرات القادمة
     autoSaveCustomerInfo();
@@ -1628,7 +1636,13 @@ function proceedToReview() {
     const combinedPhones = `${phone} / ${phone2}`;
 
     pendingOrderData = {
-        id: 'AG-' + Math.floor(1000 + Math.random() * 9000),
+// حساب عدد طلبات اليوم لتوليد رقم تسلسلي بسيط مثل AG-1, AG-2
+const todayOrdersCount = orders.filter(o => o.createdAtDate === `${yyyy}-${mm}-${dd}`).length;
+const nextOrderNum = todayOrdersCount + 1;
+
+pendingOrderData = {
+    id: 'AG-' + nextOrderNum,
+        
         customerName: name,
         phone: combinedPhones,
         type: type,
@@ -1765,6 +1779,12 @@ function renderAdminDashboard() {
             return orderDateObj >= thirtyDaysAgo;
         }
         return true;
+    });
+    // ترتيب الطلبات: الطلبات الجديدة (NEW) أولاً على اليمين فوق، ثم الأحدث دائماً
+    filteredOrders.sort((a, b) => {
+        if (a.status === 'NEW' && b.status !== 'NEW') return -1;
+        if (a.status !== 'NEW' && b.status === 'NEW') return 1;
+        return (b.id || '').localeCompare(a.id || '');
     });
 
     if (summaryText) {
@@ -1932,67 +1952,59 @@ function renderAdminDashboard() {
             document.getElementById('track-modal').classList.add('hidden');
         }
 
-        function trackOrder() {
-            const inputId = document.getElementById('track-input-id').value.trim().replace('#', '');
-            const resultDiv = document.getElementById('track-result');
-            const timelineContainer = document.getElementById('timeline-container');
+function trackOrder() {
+    const inputVal = document.getElementById('track-input-id').value.trim();
+    const resultDiv = document.getElementById('track-result');
+    const timelineContainer = document.getElementById('timeline-container');
 
-            const order = orders.find(o => o.id === inputId || o.id === 'AG-' + inputId);
+    if (!inputVal) {
+        alert("يرجى إدخال رقم الهاتف أو رقم الطلب للبحث!");
+        return;
+    }
 
-            if (!order) {
-                resultDiv.classList.remove('hidden');
-                timelineContainer.innerHTML = `
-                    <div class="text-center py-4 text-red-600 font-bold text-sm">
-                        ⚠️ لم يتم العثور على طلب بهذا الرقم. يرجى التأكد وإعادة المحاولة.
+    // البحث إما برقم الهاتف أو برقم الطلب
+    const userOrders = orders.filter(o => 
+        (o.phone && o.phone.includes(inputVal)) || 
+        String(o.id) === inputVal || 
+        String(o.id) === 'AG-' + inputVal
+    );
+
+    if (userOrders.length === 0) {
+        resultDiv.classList.remove('hidden');
+        timelineContainer.innerHTML = `
+            <div class="text-center py-6 text-red-600 font-bold text-sm">
+                ⚠️ لم يتم العثور على أي طلبات مرتبطة بهذا الرقم.
+            </div>
+        `;
+        return;
+    }
+
+    // ترتيب طلبات العميل من الأحدث للأقدم
+    userOrders.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+
+    resultDiv.classList.remove('hidden');
+    timelineContainer.innerHTML = `
+        <h4 class="font-bold text-gray-800 text-sm mb-3 border-b pb-2">سجل طلباتك (${userOrders.length} طلب):</h4>
+        <div class="space-y-4 max-h-80 overflow-y-auto pl-1">
+            ${userOrders.map(order => `
+                <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200 text-xs space-y-2">
+                    <div class="flex justify-between items-center border-b pb-1.5">
+                        <span class="font-black text-brand-dark text-sm">رقم الطلب: #${order.id}</span>
+                        <span class="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded text-[11px]">${getStatusArabicLabel(order.status)}</span>
                     </div>
-                `;
-                return;
-            }
-
-            const statuses = [
-                { key: 'NEW', label: 'تم استلام الطلب', icon: '📝' },
-                { key: 'ACCEPTED', label: 'تم قبول الطلب', icon: '👍' },
-                { key: 'PREPARING', label: 'جاري التجهيز بالمطبخ', icon: '👨‍🍳' },
-                { key: 'OUT_FOR_DELIVERY', label: 'خرج للتوصيل مع المندوب', icon: '🛵' },
-                { key: 'DELIVERED', label: 'تم التسليم بنجاح', icon: '🎉' }
-            ];
-
-            const currentStatusIdx = statuses.findIndex(s => s.key === order.status);
-
-resultDiv.classList.remove('hidden');
-            timelineContainer.innerHTML = `
-                <div class="bg-gray-50 p-3 rounded-xl text-xs space-y-1 mb-4">
-                    <p><strong>صاحب الطلب:</strong> ${order.customerName}</p>
-                    <p><strong>العنوان:</strong> ${order.address}</p>
-                    <p><strong>الإجمالي:</strong> ${order.total} ج.م</p>
-                </div>
-
-                ${(order.status === 'PREPARING' || order.status === 'ACCEPTED') ? `
-                    <div class="bg-amber-50 border border-amber-300 p-4 rounded-xl text-center space-y-1 my-4">
-                        <span class="text-xs text-amber-800 font-bold block">الوقت التقديري المتبقي لاستلام الوجبة:</span>
-                        <span class="text-2xl font-black text-brand-dark animate-pulse">⏳ حوالي 25 - 35 دقيقة</span>
+                    <div class="flex justify-between text-gray-500 font-bold">
+                        <span>📅 ${order.createdAtDate || ''}</span>
+                        <span>⏰ ${order.createdAt || ''}</span>
                     </div>
-                ` : ''}
-
-                <div class="space-y-4">
-                    ${statuses.map((st, idx) => {
-                        const isDone = idx <= currentStatusIdx;
-                        const isCurrent = idx === currentStatusIdx;
-                        return `
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isDone ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-500'} ${isCurrent ? 'ring-4 ring-green-100' : ''}">
-                                    ${st.icon}
-                                </div>
-                                <div class="flex-grow">
-                                    <h5 class="font-bold text-sm ${isDone ? 'text-gray-900' : 'text-gray-400'}">${st.label}</h5>
-                                </div>
-                                ${isCurrent ? '<span class="text-[10px] bg-amber-100 text-amber-800 font-black px-2 py-0.5 rounded">الحالة الحالية</span>' : ''}
-                            </div>
-                        `;
-                    }).join('')}
+                    <div class="text-gray-700">
+                        <p><strong>العنوان:</strong> ${order.address}</p>
+                        <p><strong>الإجمالي:</strong> ${order.total} ج.م</p>
+                    </div>
                 </div>
-            `;
-        }
+            `).join('')}
+        </div>
+    `;
+}
 // فتح لوحة الكاشير عبر الاختصار ومنع المتصفح من اعتراضه
 document.addEventListener('keydown', function(e) {
     // يعمل على Ctrl + Shift + A أو Ctrl + Shift + X
@@ -2255,9 +2267,8 @@ function renderBlacklistManagement() {
             }
         }
 function printOrderReceipt(orderId) {
-    // قراءة الطلبات بأمان من الـ LocalStorage
-    const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    const order = orders.find(o => String(o.id) === String(orderId));
+    // البحث مباشرة في قائمة الطلبات الحية القادمة من Firebase
+    const order = orders.find(o => String(o.id) === String(orderId) || String(o.id) === 'AG-' + String(orderId));
     
     if (!order) {
         alert('لم يتم العثور على بيانات هذا الطلب!');
@@ -2454,11 +2465,15 @@ database.ref('orders').on('value', (snapshot) => {
     const data = snapshot.val();
     orders = data ? Object.values(data) : [];
 
-    // تحديث الشاشة فوراً
+    // 1. إعادة رسم اللوحة دائماً
     renderAdminDashboard();
     
-    // إطلاق التنبيه والصفارة للكاشير إذا وصل طلب جديد
-    if (!isFirstLoad) {
+    // 2. فحص هل المتصفح الحالي هو "الكاشير" من خلال التحقق من تسجيل دخوله أو فتح المودال
+    const isAdminOpen = !document.getElementById('admin-dashboard-modal')?.classList.contains('hidden');
+    const isAdminLogged = localStorage.getItem('ageeba_admin_logged_in') === 'true';
+
+    // الصفارة والتنبيه يشتغلوا فقط وفقط لو الكاشير فاتح اللوحة أمامه
+    if ((isAdminOpen || isAdminLogged) && !isFirstLoad) {
         const hasNew = orders.some(o => o.status === 'NEW');
         if (hasNew) {
             triggerNewOrderAlert();
