@@ -816,38 +816,19 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
             </div>
 
             <div class="flex gap-4 border-b border-gray-300 pb-2">
-                <button id="admin-tab-orders" onclick="switchAdminSubTab('orders')" class="font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg">
+<button id="admin-tab-orders" onclick="switchAdminSubTab('orders')" class="font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg">
                     📋 إدارة الطلبات المباشرة
                 </button>
-                <!-- زر التبويب الجديد -->
-<button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition">
-    <span>➕</span>
-    <span>طلب كاونتر جديد</span>
-</button>
-
-<!-- نافذة الطلب السريع من المنيو الكامل -->
-<div id="pos-modal" class="fixed inset-0 bg-black/70 hidden backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden">
-        <!-- الهيدر -->
-        <div class="bg-emerald-800 text-white px-6 py-3 flex justify-between items-center shrink-0">
-            <h3 class="text-lg font-bold flex items-center gap-2">
-                <span>⚡</span> عمل طلب مباشر من المنيو (كاونتر)
-            </h3>
-            <button onclick="closePosModal()" class="text-white text-3xl hover:bg-emerald-700 w-9 h-9 rounded-full flex items-center justify-center transition">&times;</button>
-        </div>
-
-        <!-- عرض صفحة المنيو بالكامل -->
-        <div class="flex-1 w-full h-full relative bg-gray-100">
-            <iframe id="pos-iframe" src="" class="w-full h-full border-0"></iframe>
-        </div>
-    </div>
-</div>
                 <button id="admin-tab-menu" onclick="switchAdminSubTab('menu')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🍔 إدارة المنيو والوفرة
                 </button>
-<button id="admin-tab-blacklist" onclick="switchAdminSubTab('blacklist')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-    🚫 القائمة السوداء (المحظورين)
-</button>
+                <button id="admin-tab-blacklist" onclick="switchAdminSubTab('blacklist')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+                    🚫 القائمة السوداء (المحظورين)
+                </button>
+                <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
+                    <span>➕</span>
+                    <span>طلب كاونتر جديد</span>
+                </button>
             </div>
 
             <div id="admin-view-orders" class="space-y-4">
@@ -1186,7 +1167,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             <span class="text-2xl font-black text-brand-dark">${offer.newPrice} ج.م</span>
                             <span class="text-sm text-gray-400 line-through font-bold">${offer.oldPrice} ج.م</span>
                         </div>
-<button onclick="addOfferToCart('${offer.title}', ${offer.newPrice}, '${offer.image}')" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+<button onclick="addOfferToCart('${offer.title.replace(/'/g, "\\'")}', ${offer.newPrice}, '${offer.image}')" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">
     اطلب العرض الآن 🔥
 </button>
                         
@@ -2793,24 +2774,7 @@ function addToPosCart(name, price) {
     if (existing) {
         existing.qty += 1;
     } else {
-        posCart.push({ name: name, price: price, qty: 1 });
-    }
-    updatePosCartUI();
-}
-
-
-
-
-
-// إضافة عنصر للسلة
-function addToPosCart(index) {
-    const item = menuData[index];
-    const existing = posCart.find(i => i.name === item.name);
-
-    if (existing) {
-        existing.qty += 1;
-    } else {
-        posCart.push({ name: item.name, price: Number(item.price), qty: 1 });
+        posCart.push({ name: name, price: Number(price), qty: 1 });
     }
     updatePosCartUI();
 }
