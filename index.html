@@ -10,8 +10,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<!-- مكتبة تصدير Excel -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>    
+<!-- مكتبة تصدير Excel بتنسيقات وألوان -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -2145,8 +2146,8 @@ function renderAdminDashboard() {
         `;
     }).join('');
 }
-// دالة تصدير تقرير المبيعات لأي يوم أو فترة كـ ملف Excel
-function exportOrdersReportExcel() {
+// دالة تصدير تقرير المبيعات لأي يوم أو فترة كـ ملف Excel منسق وملون
+async function exportOrdersReportExcel() {
     const fromVal = document.getElementById('report-from-date').value;
     const toVal = document.getElementById('report-to-date').value;
 
@@ -2166,10 +2167,9 @@ function exportOrdersReportExcel() {
         return;
     }
 
-    // ترتيب من الأقدم للأحدث في التقرير
     reportOrders.sort((a, b) => (a.createdAtDate || '').localeCompare(b.createdAtDate || ''));
 
-    // 1. تجهيز شيت تفاصيل الطلبات (كل صنف في سطر)
+    // 1. شيت تفاصيل الأصناف (كل صنف في سطر)
     const detailsRows = [];
     reportOrders.forEach(order => {
         const items = Array.isArray(order.items) ? order.items : [];
@@ -2193,10 +2193,10 @@ function exportOrdersReportExcel() {
         });
     });
 
-    // 1.5 تجميع الأصناف المباعة (كام مرة اتباع كل صنف وإجمالي مبيعاته في الفترة)
+    // 2. شيت تجميع الأصناف المباعة
     const itemsAggregateMap = {};
     reportOrders.forEach(order => {
-        if (order.status === 'CANCELLED') return; // تجاهل الطلبات الملغية من التجميع
+        if (order.status === 'CANCELLED') return;
         const items = Array.isArray(order.items) ? order.items : [];
         items.forEach(item => {
             const key = `${item.name}||${item.selectedSize || 'عادي'}`;
@@ -2204,21 +2204,19 @@ function exportOrdersReportExcel() {
                 itemsAggregateMap[key] = {
                     'اسم الصنف': item.name,
                     'الحجم': item.selectedSize || 'عادي',
-                    'عدد مرات الطلب (كأوردر)': 0,
+                    'عدد مرات الطلب': 0,
                     'إجمالي الكمية المباعة': 0,
                     'إجمالي المبيعات (ج.م)': 0
                 };
             }
-            itemsAggregateMap[key]['عدد مرات الطلب (كأوردر)'] += 1;
+            itemsAggregateMap[key]['عدد مرات الطلب'] += 1;
             itemsAggregateMap[key]['إجمالي الكمية المباعة'] += Number(item.quantity || 0);
             itemsAggregateMap[key]['إجمالي المبيعات (ج.م)'] += (Number(item.priceAtPurchase || 0) * Number(item.quantity || 0));
         });
     });
-    // ترتيب الأصناف تنازلياً حسب الأكثر مبيعاً
     const itemsAggregateRows = Object.values(itemsAggregateMap).sort((a, b) => b['إجمالي الكمية المباعة'] - a['إجمالي الكمية المباعة']);
 
-    // 2. تجهيز شيت ملخص الطلبات (طلب واحد في كل سطر)   
-    
+    // 3. شيت ملخص الطلبات
     const summaryRows = reportOrders.map(order => ({
         'رقم الطلب': order.id,
         'التاريخ': order.createdAtDate || '',
@@ -2233,12 +2231,12 @@ function exportOrdersReportExcel() {
         'الإجمالي': order.total || 0
     }));
 
-    // 3. حساب إجمالي المبيعات (فقط الطلبات المُسلَّمة تُحتسب مبيعات فعلية)
+    // 4. شيت الملخص المالي
     const totalRevenue = reportOrders.filter(o => o.status === 'DELIVERED').reduce((sum, o) => sum + Number(o.total || 0), 0);
     const totalDeliveryFees = reportOrders.filter(o => o.status === 'DELIVERED').reduce((sum, o) => sum + Number(o.deliveryFee || 0), 0);
 
     const totalsRows = [
-        { 'البيان': 'الفترة', 'القيمة': (fromVal || toVal) ? `${fromVal || '...'} إلى ${toVal || '...'}` : 'كل الطلبات' },
+        { 'البيان': 'الفترة المعروضة', 'القيمة': (fromVal || toVal) ? `من ${fromVal || '...'} إلى ${toVal || '...'}` : 'كل الطلبات' },
         { 'البيان': 'عدد الطلبات الكلي', 'القيمة': reportOrders.length },
         { 'البيان': 'عدد الطلبات المُسلَّمة', 'القيمة': reportOrders.filter(o => o.status === 'DELIVERED').length },
         { 'البيان': 'عدد الطلبات الملغية', 'القيمة': reportOrders.filter(o => o.status === 'CANCELLED').length },
@@ -2247,22 +2245,60 @@ function exportOrdersReportExcel() {
         { 'البيان': 'صافي دخل المطعم', 'القيمة': (totalRevenue - totalDeliveryFees) + ' ج.م' }
     ];
 
-    // 4. بناء ملف Excel بثلاث شيتات
-    const wb = XLSX.utils.book_new();
+    // ===== بناء ملف Excel باستخدام ExcelJS مع ألوان وتنسيقات =====
+    const workbook = new ExcelJS.Workbook();
 
-    const wsTotals = XLSX.utils.json_to_sheet(totalsRows);
-    XLSX.utils.book_append_sheet(wb, wsTotals, 'الملخص المالي');
+    function addStyledSheet(sheetName, dataObjectsArray, headerColorHex) {
+        const headers = Object.keys(dataObjectsArray[0] || {});
+        const sheet = workbook.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
 
-    const wsItemsAggregate = XLSX.utils.json_to_sheet(itemsAggregateRows);
-    XLSX.utils.book_append_sheet(wb, wsItemsAggregate, 'تجميع الأصناف المباعة');
+        sheet.columns = headers.map(h => ({ header: h, key: h }));
 
-    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص الطلبات');
+        // تنسيق صف العناوين (هيدر ملون)
+        const headerRow = sheet.getRow(1);
+        headerRow.eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: headerColorHex } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        });
+        headerRow.height = 24;
 
-    const wsDetails = XLSX.utils.json_to_sheet(detailsRows);
-    XLSX.utils.book_append_sheet(wb, wsDetails, 'تفاصيل الأصناف');
+        // إضافة الصفوف مع تلوين متبادل (Zebra Striping) وحدود واضحة
+        dataObjectsArray.forEach((rowData, idx) => {
+            const row = sheet.addRow(rowData);
+            const isEven = idx % 2 === 0;
+            row.eachCell(cell => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+                    left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+                    right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+                };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEven ? 'FFFDF6E3' : 'FFFFFFFF' } };
+            });
+        });
 
-    // 5. تسمية الملف حسب الفترة المختارة وتنزيله
+        // ضبط عرض الأعمدة تلقائياً حسب أطول محتوى فيها (يحل مشكلة النص المقطوع)
+        sheet.columns.forEach(col => {
+            let maxLen = col.header ? col.header.toString().length : 10;
+            col.eachCell({ includeEmpty: true }, cell => {
+                const cellLen = cell.value ? cell.value.toString().length : 0;
+                if (cellLen > maxLen) maxLen = cellLen;
+            });
+            col.width = Math.min(Math.max(maxLen + 4, 12), 45);
+        });
+
+        sheet.views = [{ state: 'frozen', ySplit: 1, rightToLeft: true }]; // تثبيت صف العناوين
+    }
+
+    addStyledSheet('الملخص المالي', totalsRows, 'FF58081A');
+    addStyledSheet('تجميع الأصناف المباعة', itemsAggregateRows, 'FFD97706');
+    addStyledSheet('ملخص الطلبات', summaryRows, 'FF1F2937');
+    addStyledSheet('تفاصيل الأصناف', detailsRows, 'FF166534');
+
+    // تسمية الملف وتنزيله
     let fileName = 'تقرير_مبيعات_عجيبه';
     if (fromVal && toVal && fromVal === toVal) {
         fileName += `_${fromVal}`;
@@ -2272,7 +2308,15 @@ function exportOrdersReportExcel() {
         fileName += '_كل_الطلبات';
     }
 
-    XLSX.writeFile(wb, fileName + '.xlsx');
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName + '.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
 }
         function closeSuccessModal() {
             document.getElementById('success-modal').classList.add('hidden');
