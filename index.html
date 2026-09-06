@@ -1686,43 +1686,9 @@ function submitFinalOrder() {
         return;
     }
 
-    // 2. الطلبات الكبيرة أكثر من 700 ج.م
-    if (pendingOrderData.total > 700) {
-        closeCheckoutModal();
-        const msg = encodeURIComponent(`مرحباً مطعم عجيبه، أرغب بتأكيد طلبي بقيمة (${pendingOrderData.total} ج.م) ورقم الطلب (#${pendingOrderData.id}). سأقوم بإرفاق إيصال التحويل.`);
-        const payBtn = document.getElementById('whatsapp-pay-btn');
-        if (payBtn) payBtn.href = `https://wa.me/201127166175?text=${msg}`;
-        const payModal = document.getElementById('payment-modal');
-        if (payModal) payModal.classList.remove('hidden');
-        return;
-    }
-
-    // 3. تجهيز نص الرسالة الشامل للواتساب
-    let itemsText = pendingOrderData.items.map(i => `• ${i.name} (${i.selectedSize}) × ${i.quantity} = ${i.priceAtPurchase * i.quantity}ج`).join('%0A');
-    
-    let fullWhatsAppMessage = `*طلب جديد من مطعم عجيبه 🍔*%0A` +
-        `----------------------------------%0A` +
-        `*رقم الطلب:* #${pendingOrderData.id}%0A` +
-        `*الاسم:* ${pendingOrderData.customerName}%0A` +
-        `*أرقام الهاتف:* ${pendingOrderData.phone}%0A` +
-        `*طريقة الاستلام:* ${pendingOrderData.type === 'DELIVERY' ? 'توصيل للمنزل 🛵' : 'استلام من الفرع 🏪'}%0A` +
-        `*العنوان:* ${pendingOrderData.address}%0A` +
-        (pendingOrderData.notes ? `*ملاحظات:* ${pendingOrderData.notes}%0A` : '') +
-        `----------------------------------%0A` +
-        `*الأصناف المطلوبة:*%0A${itemsText}%0A` +
-        `----------------------------------%0A` +
-        `*المجموع:* ${pendingOrderData.subtotal} ج.م%0A` +
-        `*التوصيل:* ${pendingOrderData.deliveryFee} ج.م%0A` +
-        `*الإجمالي النهائي:* ${pendingOrderData.total} ج.م`;
-
-    // 4. حفظ الطلب في الـ LocalStorage وتحديث متغير المبيعات واللوحة فوراً
+    // 2. إغلاق مودال مراجعة الطلب وحفظ البيانات في النظام فوراً
     closeCheckoutModal();
     processOrderSuccess();
-
-    // 5. فتح الواتساب للعميل بعد الضمان الكامل للحفظ
-    setTimeout(() => {
-        window.open(`https://wa.me/201127166175?text=${fullWhatsAppMessage}`, '_blank');
-    }, 100);
 }
 
 function processOrderSuccess() {
