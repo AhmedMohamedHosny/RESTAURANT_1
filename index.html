@@ -1091,9 +1091,10 @@ window.addEventListener('DOMContentLoaded', () => {
                             <span class="text-2xl font-black text-brand-dark">${offer.newPrice} ج.م</span>
                             <span class="text-sm text-gray-400 line-through font-bold">${offer.oldPrice} ج.م</span>
                         </div>
-                        <button onclick="addOfferToCart('${offer.title}', ${offer.newPrice})" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">
-                            اطلب العرض الآن 🔥
-                        </button>
+<button onclick="addOfferToCart('${offer.title}', ${offer.newPrice}, '${offer.image}')" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+    اطلب العرض الآن 🔥
+</button>
+                        
                     </div>
                 </div>
             `).join('');
