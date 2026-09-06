@@ -429,12 +429,12 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
                 </a>
             </div>
         </div>
-<div class="relative flex justify-center">
+<div class="relative flex justify-center" style="perspective: 1000px;">
     <div class="w-72 h-72 sm:w-96 sm:h-96 bg-brand-gold/20 absolute -inset-4 blur-2xl rounded-full"></div>
     
-    <!-- إطار السلايدر الرئيسي -->
-    <div class="relative z-10 w-full h-80 sm:h-96 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900 group">
-        <!-- الصورة المعروضة (افتراضية أونلاين) -->
+    <!-- إطار السلايدر الرئيسي مع تأثر الـ 3D -->
+    <div class="relative z-10 w-full h-80 sm:h-96 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900 group transition-all duration-700 hover:rotate-y-12 hover:rotate-x-6 hover:scale-105">
+        <!-- الصورة المعروضة -->
         <img id="hero-slider-img" src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80" alt="أشهى وجبات عجيبة" class="w-full h-full object-cover transition-all duration-700 opacity-100 scale-100">
         
         <!-- شريط التقدم المتدرج باللون الذهبي أسفل الصورة -->
@@ -2600,11 +2600,11 @@ function toggleDarkMode() {
         if (icon) icon.className = "fa-solid fa-moon text-lg text-amber-400";
     }
 }
-        // قائمة صور العروض داخل مجلد image
+// روابط صور تعمل بشكل مباشر ومعالجة الانقلاب والتكبير الـ 3D
 const offerImages = [
-    'image/offer1.jpg',
-    'image/offer2.jpg',
-    'image/offer3.jpg'
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80'
 ];
 
 let currentOfferIndex = 0;
@@ -2615,31 +2615,26 @@ function startHeroSlider() {
 
     if (!sliderImg || !progressBar) return;
 
-    // تشغيل أنيميشن الشريط الذهبي
     progressBar.classList.remove('run-progress');
-    void progressBar.offsetWidth; // إعادة تشغيل الأنيميشن
+    void progressBar.offsetWidth;
     progressBar.classList.add('run-progress');
 
-    // تغيير الصورة كل 5 ثواني مع تأثير إختفاء وظهور ناعم
     setInterval(() => {
-        sliderImg.classList.add('opacity-0', 'scale-105');
+        // تأثير الشقلبة والتكبير والتصغير الـ 3D أثناء الانتقال
+        sliderImg.style.transform = 'scale(0.7) rotateY(180deg)';
+        sliderImg.style.opacity = '0';
 
         setTimeout(() => {
             currentOfferIndex = (currentOfferIndex + 1) % offerImages.length;
             sliderImg.src = offerImages[currentOfferIndex];
             
-            // التعامل مع امتداد png أو jpg تلقائياً في حال وجود خطأ
-            sliderImg.onerror = () => {
-                sliderImg.src = offerImages[currentOfferIndex].replace('.jpg', '.png');
-            };
-
-            sliderImg.classList.remove('opacity-0', 'scale-105');
-        }, 300);
+            sliderImg.style.transform = 'scale(1) rotateY(0deg)';
+            sliderImg.style.opacity = '1';
+        }, 500);
 
     }, 5000);
 }
 
-// تشغيل السلايدر تلقائياً فور تحميل الصفحة
 window.addEventListener('load', startHeroSlider);
     </script>
 <!-- Floating WhatsApp Button -->
