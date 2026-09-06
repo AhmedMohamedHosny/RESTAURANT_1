@@ -2767,41 +2767,79 @@ function startHeroSlider() {
 window.addEventListener('load', startHeroSlider);
         let posCart = [];
 
-// فتح النافذة وتحميل أصناف المنيو
+// فتح النافذة وقراءة المنيو مباشرة من Firebase
 function openPosModal() {
     posCart = [];
     updatePosCartUI();
     document.getElementById('pos-modal').classList.remove('hidden');
-    renderPosMenu();
+    
+    // جلب المنيو مباشرة لضمان ظهوره
+    const menuContainer = document.getElementById('pos-menu-items');
+    menuContainer.innerHTML = '<p class="text-center text-gray-500 py-4">جاري تحميل المنيو...</p>';
+
+    database.ref('menu').once('value').then(snapshot => {
+        const menuData = snapshot.val();
+        renderPosMenu(menuData);
+    }).catch(err => {
+        menuContainer.innerHTML = '<p class="text-center text-red-500 py-4">حدث خطأ في تحميل المنيو</p>';
+    });
+}
+
+// عرض عناصر المنيو بطريقة واضحة وسهلة للاختيار
+function renderPosMenu(menuData) {
+    const container = document.getElementById('pos-menu-items');
+    container.innerHTML = '';
+
+    if (!menuData) {
+        container.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">لا توجد أصناف متاحة بالمنيو حالياً</p>';
+        return;
+    }
+
+    // تحويل الكائنات إلى مصفوفة إذا كانت من Firebase
+    const itemsList = Array.isArray(menuData) ? menuData : Object.values(menuData);
+
+    itemsList.forEach((item) => {
+        if (!item || !item.name) return;
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flex justify-between items-center bg-white p-2.5 rounded-lg border shadow-sm hover:border-emerald-500 transition cursor-pointer';
+        
+        itemDiv.innerHTML = `
+            <div>
+                <span class="font-bold text-gray-800 text-sm block">${item.name}</span>
+                <span class="text-xs text-emerald-700 font-semibold">${item.price} ج.م</span>
+            </div>
+            <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <span>➕</span> إضافة
+            </button>
+        `;
+
+        // إمكانية الضغط على العنصر بالكامل لإضافته للسلة
+        itemDiv.onclick = () => {
+            addToPosCart(item.name, Number(item.price));
+        };
+
+        container.appendChild(itemDiv);
+    });
+}
+
+// دالة الإضافة المعدلة لتستقبل الاسم والسعر مباشرة
+function addToPosCart(name, price) {
+    const existing = posCart.find(i => i.name === name);
+
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        posCart.push({ name: name, price: price, qty: 1 });
+    }
+    updatePosCartUI();
 }
 
 function closePosModal() {
     document.getElementById('pos-modal').classList.add('hidden');
 }
 
-// عرض قائمة الأطعمة المتاحة
-function renderPosMenu() {
-    const container = document.getElementById('pos-menu-items');
-    container.innerHTML = '';
 
-    if (!menuData || menuData.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 text-center">لا توجد أصناف متاحة بالمنيو</p>';
-        return;
-    }
-
-    menuData.forEach((item, index) => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm';
-        itemDiv.innerHTML = `
-            <div>
-                <span class="font-bold">${item.name}</span>
-                <span class="text-xs text-gray-500 block">${item.price} ج.م</span>
-            </div>
-            <button onclick="addToPosCart(${index})" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-2 py-1 rounded text-xs font-bold">+ إضافة</button>
-        `;
-        container.appendChild(itemDiv);
-    });
-}
 
 // إضافة عنصر للسلة
 function addToPosCart(index) {
