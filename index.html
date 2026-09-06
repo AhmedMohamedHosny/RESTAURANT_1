@@ -1553,6 +1553,17 @@ function openAdminAuth() {
         alert("كلمة المرور غير صحيحة!");
     }
 }
+        function getFormattedArabicDate(dateObj) {
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayName = days[dateObj.getDay()];
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    return {
+        fullStr: `${yyyy}-${mm}-${dd}`,
+        displayStr: `${dayName} ${yyyy}-${mm}-${dd}`
+    };
+}
 
 function closeAdminDashboard() {
     localStorage.removeItem('ageeba_admin_logged_in'); // مسح حالة تسجيل الدخول عند الخروج
@@ -1694,46 +1705,46 @@ function renderAdminDashboard() {
     const container = document.getElementById('admin-orders-list');
     if (!container) return;
 
-    // 1. تاريخ اليوم
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayObj = new Date();
+    const todayInfo = getFormattedArabicDate(todayObj);
 
-    // 2. قراءة قيمة الفلتر
     const filterSelect = document.getElementById('sales-time-filter');
-    const filterValue = filterSelect ? filterSelect.value : 'all';
+    const filterValue = filterSelect ? filterSelect.value : 'today';
 
-    // 3. فلترة الطلبات بأمان لمنع أي خطأ تاريخ
+    const summaryText = document.getElementById('filter-summary-text');
+    if (summaryText) summaryText.innerText = `التاريخ الحالي: ${todayInfo.displayStr}`;
+
     const filteredOrders = orders.filter(order => {
-        const dateRaw = order.createdAtDate || order.date;
-        let orderDateStr = dateRaw;
-
-        if (!orderDateStr || isNaN(new Date(orderDateStr).getTime())) {
-            orderDateStr = todayStr;
+        let orderDateObj;
+        if (order.createdAtDate) {
+            orderDateObj = new Date(order.createdAtDate + 'T00:00:00');
+        } else if (order.date) {
+            orderDateObj = new Date(order.date);
         } else {
-            orderDateStr = new Date(orderDateStr).toISOString().split('T')[0];
+            orderDateObj = todayObj;
         }
 
-        const orderDateObj = new Date(orderDateStr);
-        
+        const orderInfo = getFormattedArabicDate(orderDateObj);
+
         if (filterValue === 'today') {
-            return orderDateStr === todayStr;
+            return orderInfo.fullStr === todayInfo.fullStr;
         } else if (filterValue === 'yesterday') {
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            return orderDateStr === yesterday.toISOString().split('T')[0];
+            const yesterdayObj = new Date(todayObj);
+            yesterdayObj.setDate(todayObj.getDate() - 1);
+            const yesterdayInfo = getFormattedArabicDate(yesterdayObj);
+            return orderInfo.fullStr === yesterdayInfo.fullStr;
         } else if (filterValue === 'week') {
-            const sevenDaysAgo = new Date(today);
-            sevenDaysAgo.setDate(today.getDate() - 7);
+            const sevenDaysAgo = new Date(todayObj);
+            sevenDaysAgo.setDate(todayObj.getDate() - 7);
             return orderDateObj >= sevenDaysAgo;
         } else if (filterValue === 'month') {
-            const thirtyDaysAgo = new Date(today);
-            thirtyDaysAgo.setDate(today.getDate() - 30);
+            const thirtyDaysAgo = new Date(todayObj);
+            thirtyDaysAgo.setDate(todayObj.getDate() - 30);
             return orderDateObj >= thirtyDaysAgo;
         }
-        return true; // في حال اختيار 'all'
+        return true;
     });
 
-    // 4. تحديث الإحصائيات
     if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
     if (document.getElementById('stat-revenue')) {
         const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
@@ -1744,9 +1755,8 @@ function renderAdminDashboard() {
     if (document.getElementById('stat-ready')) document.getElementById('stat-ready').innerText = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
     if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length;
 
-    // 5. عرض الطلبات
     if (filteredOrders.length === 0) {
-        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها حالياً</p>`;
+        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها حالياً لهذا التاريخ</p>`;
         return;
     }
 
@@ -1763,8 +1773,9 @@ function renderAdminDashboard() {
             itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
         }
 
-        const orderTime = order.createdAt || 'الوقت غير محدد';
-        const orderDateFormatted = order.createdAtDate || todayStr;
+        const oDateObj = order.createdAtDate ? new Date(order.createdAtDate + 'T00:00:00') : todayObj;
+        const oDateFormatted = getFormattedArabicDate(oDateObj).displayStr;
+        const orderTime = order.createdAt || '';
 
         return `
         <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200">
@@ -1779,7 +1790,7 @@ function renderAdminDashboard() {
 
             <div class="text-right mb-3">
                 <h4 class="font-extrabold text-gray-900 text-base">${order.customerName || 'عميل'}</h4>
-                <p class="text-xs text-gray-500 font-bold mt-0.5">${orderDateFormatted} | ${orderTime}</p>
+                <p class="text-xs text-gray-500 font-bold mt-0.5">${oDateFormatted} | ${orderTime}</p>
                 <p class="text-xs text-gray-700 font-semibold mt-1"><strong>العنوان:</strong> ${order.address || 'استلام من الفرع'}</p>
                 ${order.notes ? `<p class="text-xs text-amber-700 font-bold mt-1 bg-amber-50 p-1 rounded"><strong>ملاحظات:</strong> ${order.notes}</p>` : ''}
             </div>
@@ -1813,6 +1824,31 @@ function deleteOrder(orderId) {
         saveOrdersState();
         renderAdminDashboard();
     }
+}
+        // 1. دالة ربط اسم الطباعة لمنع خطأ printOrderInvoice
+function printOrderInvoice(orderId) {
+    printOrderReceipt(orderId);
+}
+
+// 2. دالة عرض واجهة إدارة القائمة السوداء لمنع خطأ renderBlacklistManagement
+function renderBlacklistManagement() {
+    const container = document.getElementById('blacklist-items-container');
+    if (!container) return;
+    const list = getBlacklist();
+
+    if (list.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center py-6 text-gray-500 font-bold">لا توجد أرقام محظورة حالياً</p>`;
+        return;
+    }
+
+    container.innerHTML = list.map(phone => `
+        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center">
+            <span class="font-bold text-gray-800 text-sm">${phone}</span>
+            <button onclick="removeFromBlacklist('${phone}')" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+                فك الحظر
+            </button>
+        </div>
+    `).join('');
 }
 
         function getStatusArabicLabel(status) {
