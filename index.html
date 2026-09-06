@@ -1532,9 +1532,11 @@ function addOfferToCart(title, price, image) {
             `).join('');
 
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const delivery = 15;
-            document.getElementById('cart-subtotal').innerText = subtotal + ' ج.م';
-            document.getElementById('cart-total').innerText = (subtotal + delivery) + ' ج.م';
+const delivery = (typeof currentDeliveryFee !== 'undefined') ? currentDeliveryFee : 15;
+document.getElementById('cart-delivery-fee').innerText = delivery + ' ج.م';
+document.getElementById('cart-subtotal').innerText = subtotal + ' ج.م';
+document.getElementById('cart-total').innerText = (subtotal + delivery) + ' ج.م';
+            
         }
 
         function changeCartQty(cartItemId, delta) {
@@ -1693,8 +1695,7 @@ if (phone === phone2) {
 
     document.getElementById('rev-name').innerText = name;
     document.getElementById('rev-phone').innerText = combinedPhones;
-    document.getElementById('rev-type').innerText = type === 'DELIVERY' ? `توصيل دليفري (+${deliveryFee} ج.م)` : 'استلام من الفرع';
-    
+document.getElementById('rev-type').innerText = type === 'DELIVERY' ? `توصيل دليفري (+${deliveryFee} ج.م - ${areaName})` : 'استلام من الفرع';    
     if (type === 'DELIVERY') {
         document.getElementById('rev-address-row').classList.remove('hidden');
         document.getElementById('rev-address').innerText = fullAddress;
