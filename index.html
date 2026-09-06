@@ -1694,39 +1694,46 @@ function submitFinalOrder() {
 function processOrderSuccess() {
     if (!pendingOrderData) return;
 
-    orderCountInWindow++;
-    lastOrderTime = Date.now();
-    localStorage.setItem('ageeba_last_order_time', lastOrderTime.toString());
-    localStorage.setItem('ageeba_order_count', orderCountInWindow.toString());
-
-    // التأكد الصريح من أن حالة الطلب الجديد "NEW"
+    // التأكد من تعيين الحالة كـ طلب جديد
     pendingOrderData.status = 'NEW';
 
-    // 1. استرجاع الأوردرات الحالية وإضافة الطلب الجديد في البداية
-    let currentOrders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    // 1. جلب الطلبات السابقة وإضافة الجديد
+    let currentOrders = [];
+    try {
+        currentOrders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    } catch (e) {
+        currentOrders = [];
+    }
+
     currentOrders.unshift(pendingOrderData);
-    
-    // 2. تحديث الـ LocalStorage والمتغير العام فوراً
     orders = currentOrders;
+    
+    // 2. حفظ البيانات في الـ LocalStorage
     localStorage.setItem('ageeba_orders', JSON.stringify(orders));
 
-    // 3. تفريغ السلة
+    // 3. تفريغ السلة وتحديث الشارة
     cart = [];
     saveCartState();
 
-    const notice = document.getElementById('large-order-notice');
-    if (pendingOrderData.total > 700) {
-        notice?.classList.remove('hidden');
-    } else {
-        notice?.classList.add('hidden');
+    // 4. إظهار نافذة النجاح للعميل
+    const successIdEl = document.getElementById('success-order-id');
+    if (successIdEl) successIdEl.innerText = '#' + pendingOrderData.id;
+    
+    const successModal = document.getElementById('success-modal');
+    if (successModal) successModal.classList.remove('hidden');
+
+    // 5. تحديث لوحة الكاشير وإشعار الطلب الجديد بأمان
+    try {
+        renderAdminDashboard();
+    } catch(err) {
+        console.error("خطأ أثناء رسم اللوحة:", err);
     }
-
-    document.getElementById('success-order-id').innerText = '#' + pendingOrderData.id;
-    document.getElementById('success-modal').classList.remove('hidden');
-
-    // 4. تحديث العدادات وتنبيه الطلب الجديد
-    renderAdminDashboard();
-    triggerNewOrderAlert();
+    
+    try {
+        triggerNewOrderAlert();
+    } catch(err) {
+        console.error("خطأ أثناء تشغيل التنبيه:", err);
+    }
 }
 
 function renderAdminDashboard() {
@@ -2294,14 +2301,21 @@ function printOrderReceipt(orderId) {
             }
         }
 
-        function triggerNewOrderAlert() {
-            document.getElementById('new-order-banner').classList.remove('hidden');
-        }
+function triggerNewOrderAlert() {
+    const banner = document.getElementById('new-order-banner');
+    if (banner) {
+        banner.classList.remove('hidden');
+    }
+    playKitchenAlert();
+}
 
-        function dismissBanner() {
-            document.getElementById('new-order-banner').classList.add('hidden');
-            openAdminAuth();
-        }
+function dismissBanner() {
+    const banner = document.getElementById('new-order-banner');
+    if (banner) {
+        banner.classList.add('hidden');
+    }
+    stopKitchenAlert();
+}
 
 function renderAdminMenuManagement() {
     const container = document.getElementById('admin-view-menu');
