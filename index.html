@@ -6,6 +6,9 @@
     <title>عجيبه | AGEEBA RESTAURANT</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -1679,14 +1682,12 @@ function proceedToReview() {
 function submitFinalOrder() {
     if (!pendingOrderData) return;
 
-    // 1. فحص القائمة السوداء (Blacklist)
     const blacklist = getBlacklist();
     if (blacklist.some(p => pendingOrderData.phone.includes(p))) {
         alert("عذراً، يرجى الاتصال بالمطعم مباشرة هاتفياً لإتمام هذا الطلب.");
         return;
     }
 
-    // 2. إغلاق مودال المراجعة وحفظ الطلب
     closeCheckoutModal();
     processOrderSuccess();
 }
@@ -1694,46 +1695,26 @@ function submitFinalOrder() {
 function processOrderSuccess() {
     if (!pendingOrderData) return;
 
-    // التأكد من تعيين الحالة كـ طلب جديد
     pendingOrderData.status = 'NEW';
 
-    // 1. جلب الطلبات السابقة وإضافة الجديد
-    let currentOrders = [];
-    try {
-        currentOrders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    } catch (e) {
-        currentOrders = [];
-    }
+    // 1. إرسال الطلب أونلاين لقاعدة البيانات بدلاً من الـ localStorage
+    database.ref('orders/' + pendingOrderData.id).set(pendingOrderData)
+    .then(() => {
+        cart = [];
+        saveCartState();
 
-    currentOrders.unshift(pendingOrderData);
-    orders = currentOrders;
-    
-    // 2. حفظ البيانات في الـ LocalStorage
-    localStorage.setItem('ageeba_orders', JSON.stringify(orders));
+        const successIdEl = document.getElementById('success-order-id');
+        if (successIdEl) successIdEl.innerText = '#' + pendingOrderData.id;
 
-    // 3. تفريغ السلة وتحديث الشارة
-    cart = [];
-    saveCartState();
+        const successModal = document.getElementById('success-modal');
+        if (successModal) successModal.classList.remove('hidden');
 
-    // 4. إظهار نافذة النجاح للعميل
-    const successIdEl = document.getElementById('success-order-id');
-    if (successIdEl) successIdEl.innerText = '#' + pendingOrderData.id;
-    
-    const successModal = document.getElementById('success-modal');
-    if (successModal) successModal.classList.remove('hidden');
-
-    // 5. تحديث لوحة الكاشير وإشعار الطلب الجديد بأمان
-    try {
-        renderAdminDashboard();
-    } catch(err) {
-        console.error("خطأ أثناء رسم اللوحة:", err);
-    }
-    
-    try {
-        triggerNewOrderAlert();
-    } catch(err) {
-        console.error("خطأ أثناء تشغيل التنبيه:", err);
-    }
+        // ملاحظة: تم إزالة triggerNewOrderAlert() من هنا كي لا تطلق الصفارة لدى العميل!
+    })
+    .catch((error) => {
+        alert("حدث خطأ أثناء إرسال الطلب، يرجى التأكد من الاتصال بالإنترنت.");
+        console.error(error);
+    });
 }
 
 function renderAdminDashboard() {
@@ -2346,21 +2327,14 @@ function printOrderReceipt(orderId) {
 }
 
 function updateOrderStatus(orderId, newStatus) {
-    // 1. إيقاف صوت الجرس التنبيهي وإخفاء البانر الأصفر مباشرة
     dismissBanner();
 
-    // 2. استرجاع الأوردرات وتعديل حالة الطلب المحدد
-    let currentOrders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    const order = currentOrders.find(o => String(o.id) === String(orderId));
-    
-    if (order) {
-        order.status = newStatus;
-        orders = currentOrders;
-        localStorage.setItem('ageeba_orders', JSON.stringify(orders));
-        
-        // 3. إعادة رسم لوحة الكاشير بالقيم والحالات الجديدة
+    // تحديث حالة الطلب أونلاين في Firebase
+    database.ref('orders/' + orderId).update({
+        status: newStatus
+    }).then(() => {
         renderAdminDashboard();
-    }
+    });
 }
 
 function triggerNewOrderAlert() {
@@ -2454,7 +2428,44 @@ function toggleItemAvailability(itemId) {
         renderMenu(); // تحديث المنيو للعميل تلقائياً
     }
 }
+// 1. إعدادات Firebase (قم بإنشاء مشروع مجاني في Firebase Console واستبدال الإعدادات هنا)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "ageeba-restaurant.firebaseapp.com",
+    databaseURL: "https://ageeba-restaurant-default-rtdb.firebaseio.com",
+    projectId: "ageeba-restaurant",
+    storageBucket: "ageeba-restaurant.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdef"
+};
 
+// تشغيل الفايربيس
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const database = firebase.database();
+
+// 2. الاستماع اللحظي للطلبات على جهاز الكاشير فقط
+let isFirstLoad = true;
+database.ref('orders').on('value', (snapshot) => {
+    const data = snapshot.val();
+    orders = data ? Object.values(data) : [];
+    
+    // إذا كانت لوحة الكاشير مفتوحة، قم بإعادة رسم الطلبات
+    const adminModal = document.getElementById('admin-dashboard-modal');
+    if (adminModal && !adminModal.classList.contains('hidden')) {
+        renderAdminDashboard();
+        
+        // تشغيل الصفارة والتنبيه للكاشير فقط إذا كان هناك طلب جديد
+        if (!isFirstLoad) {
+            const hasNew = orders.some(o => o.status === 'NEW');
+            if (hasNew) {
+                triggerNewOrderAlert();
+            }
+        }
+    }
+    isFirstLoad = false;
+});
 // دالة تعديل السعر المباشر
 function editItemPrice(itemId) {
     const item = menuItems.find(i => i.id === itemId);
