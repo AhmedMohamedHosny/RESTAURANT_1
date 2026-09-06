@@ -1686,24 +1686,51 @@ function renderZReport() {
 
 function renderAdminDashboard() {
     const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    const container = document.getElementById('admin-orders-container'); // تأكد من اسم الـ ID عندك
+const container = document.getElementById('admin-orders-list');
+    
+    // تحديث أرقام الإحصائيات العلوية بناءً على الطلبات المعروضة
+    if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
+    if (document.getElementById('stat-revenue')) {
+        const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+        document.getElementById('stat-revenue').innerText = totalSales + ' ج.م';
+    }
+    if (document.getElementById('stat-new')) document.getElementById('stat-new').innerText = filteredOrders.filter(o => o.status === 'NEW').length;
+    if (document.getElementById('stat-prep')) document.getElementById('stat-prep').innerText = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'ACCEPTED').length;
+    if (document.getElementById('stat-ready')) document.getElementById('stat-ready').innerText = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
+    if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length; 
+    
     if (!container) return;
 
     // 1. إعداد تاريخ اليوم بدقة (السنة - الشهر - اليوم)
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // 2. فلترة الطلبات الخاصة باليوم فقط
-    const filterSelect = document.getElementById('admin-date-filter');
-    const filterValue = filterSelect ? filterSelect.value : 'today';
+// 2. ربط الـ ID الصحيح للفلتر وحساب الفلترة
+    const filterSelect = document.getElementById('sales-time-filter');
+    const filterValue = filterSelect ? filterSelect.value : 'all';
 
     const filteredOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAtDate || order.createdAt || order.date);
+        
         if (filterValue === 'today') {
-            const orderDate = new Date(order.createdAt || order.date);
-            const orderDateStr = orderDate.toISOString().split('T')[0];
-            return orderDateStr === todayStr;
+            return order.createdAtDate === todayStr || orderDate.toISOString().split('T')[0] === todayStr;
+        } else if (filterValue === 'yesterday') {
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            return order.createdAtDate === yesterdayStr || orderDate.toISOString().split('T')[0] === yesterdayStr;
+        } else if (filterValue === 'week') {
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            return orderDate >= sevenDaysAgo;
+        } else if (filterValue === 'month') {
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            return orderDate >= thirtyDaysAgo;
         }
-        return true;
+        
+        // عند اختيار "all" (كل الطلبات)
+        return true; 
     });
 
     // 3. عرض الطلبات
