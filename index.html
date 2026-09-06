@@ -1438,19 +1438,25 @@ function confirmAddToCart() {
             }
         }
 
-        function addOfferToCart(title, price) {
-            cart.push({
-                cartItemId: Date.now().toString(),
-                name: title,
-                price: price,
-                selectedSize: "عرض خاص",
-                selectedExtras: [],
-                quantity: 1,
-                image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80"
-            });
-            saveCartState();
-            toggleCartModal();
-        }
+function addOfferToCart(title, price) {
+    cart.push({
+        cartItemId: Date.now().toString(),
+        name: title,
+        price: price,
+        selectedSize: "عرض خاص",
+        selectedExtras: [],
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80"
+    });
+    saveCartState();
+
+    // اهتزاز أيقونة السلة العلوية للتأكيد بدون فتح القائمة
+    const cartBtn = document.getElementById('cart-badge')?.parentElement;
+    if (cartBtn) {
+        cartBtn.classList.add('cart-shake');
+        setTimeout(() => cartBtn.classList.remove('cart-shake'), 500);
+    }
+}
 
         function toggleCartModal() {
             const modal = document.getElementById('cart-modal');
@@ -1778,11 +1784,11 @@ function renderAdminDashboard() {
         }
         return true;
     });
-    // ترتيب الطلبات: الطلبات الجديدة (NEW) أولاً على اليمين فوق، ثم الأحدث دائماً
+// ترتيب الطلبات تنازلياً حسب رقم الطلب (الأحدث ركماً يظل على اليمين فوق دائماً)
     filteredOrders.sort((a, b) => {
-        if (a.status === 'NEW' && b.status !== 'NEW') return -1;
-        if (a.status !== 'NEW' && b.status === 'NEW') return 1;
-        return (b.id || '').localeCompare(a.id || '');
+        const numA = parseInt(String(a.id).replace(/\D/g, '')) || 0;
+        const numB = parseInt(String(b.id).replace(/\D/g, '')) || 0;
+        return numB - numA;
     });
 
     if (summaryText) {
