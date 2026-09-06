@@ -892,6 +892,11 @@ header {
             renderMenu();
             loadSavedCustomerInfo();
             updateCartBadge();
+            // فحص ما إذا كان الكاشير داخل اللوحة قبل التحديث
+    if (localStorage.getItem('ageeba_admin_logged_in') === 'true') {
+        document.getElementById('admin-dashboard-modal').classList.remove('hidden');
+        renderAdminDashboard();
+    }
         });
 
         function saveMenuState() {
@@ -1533,19 +1538,21 @@ function handleLogoClick() {
     }
     setTimeout(() => { logoClickCounter = 0; }, 3000);
 }
-        function openAdminAuth() {
-            const pwd = prompt("أدخل كلمة مرور كاشير مطعم عجيبه (افتراضي: 1234):");
-            if (pwd === "1234" || pwd === "admin") {
-                document.getElementById('admin-dashboard-modal').classList.remove('hidden');
-                renderAdminDashboard();
-            } else if (pwd !== null) {
-                alert("كلمة المرور غير صحيحة!");
-            }
-        }
+function openAdminAuth() {
+    const pwd = prompt("أدخل كلمة مرور كاشير مطعم عجيبه :");
+    if (pwd === "123456789" || pwd === "admin") {
+        localStorage.setItem('ageeba_admin_logged_in', 'true'); // حفظ حالة تسجيل الدخول
+        document.getElementById('admin-dashboard-modal').classList.remove('hidden');
+        renderAdminDashboard();
+    } else if (pwd !== null) {
+        alert("كلمة المرور غير صحيحة!");
+    }
+}
 
-        function closeAdminDashboard() {
-            document.getElementById('admin-dashboard-modal').classList.add('hidden');
-        }
+function closeAdminDashboard() {
+    localStorage.removeItem('ageeba_admin_logged_in'); // مسح حالة تسجيل الدخول عند الخروج
+    document.getElementById('admin-dashboard-modal').classList.add('hidden');
+}
 
 function switchAdminSubTab(tab) {
     const tabs = ['orders', 'menu', 'blacklist'];
