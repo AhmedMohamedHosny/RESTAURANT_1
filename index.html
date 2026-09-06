@@ -1719,12 +1719,8 @@ function processOrderSuccess() {
         console.error("Firebase Set Error:", error);
     });
 }
-
 function renderAdminDashboard() {
-    // إعادة قراءة أحدث بيانات من الذاكرة دائماً
-    try {
-        orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    } catch(e) { orders = []; }
+    // عدم إعادة تعيين orders من localStorage لضمان استخدام بيانات Firebase اللحظية
     
     const container = document.getElementById('admin-orders-list');
     if (!container) return;
@@ -2458,17 +2454,14 @@ database.ref('orders').on('value', (snapshot) => {
     const data = snapshot.val();
     orders = data ? Object.values(data) : [];
 
-    // إعادة رسم اللوحة إذا كانت مفتوحة
-    const adminModal = document.getElementById('admin-dashboard-modal');
-    if (adminModal && !adminModal.classList.contains('hidden')) {
-        renderAdminDashboard();
-        
-        // إطلاق الصفارة والتنبيه للكاشير فقط إذا نزل طلب جديد بعد الفتح
-        if (!isFirstLoad) {
-            const hasNew = orders.some(o => o.status === 'NEW');
-            if (hasNew) {
-                triggerNewOrderAlert();
-            }
+    // تحديث الشاشة فوراً
+    renderAdminDashboard();
+    
+    // إطلاق التنبيه والصفارة للكاشير إذا وصل طلب جديد
+    if (!isFirstLoad) {
+        const hasNew = orders.some(o => o.status === 'NEW');
+        if (hasNew) {
+            triggerNewOrderAlert();
         }
     }
     isFirstLoad = false;
