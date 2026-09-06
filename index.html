@@ -244,19 +244,44 @@ width: 100% !important;
     animation: cartShake 0.4s ease-in-out;
 }
 /* =========================================================
-   نظام الثيمات المتكامل (Full Light/Dark Theme Engine)
+   نظام الألوان المتناسق والتمرير المتكامل (Dark/Light Modes)
    ========================================================= */
 
-/* 1. الثيم النهاري الشامل (Light Mode) */
+/* 1. الوضع الداكن الأساسي (Dark Mode - Default) */
+body {
+    background-color: #0b0d0f !important;
+    color: #f8fafc !important;
+}
+
+/* خلفية شريط الهيدر والعروض والمنيو في المود الليلي */
+#offers-section, #menu-section {
+    background-color: #0b0d0f !important;
+}
+
+/* بطاقات الطعام في الليلي */
+.food-card-3d {
+    background: #14181d !important;
+    border: 1px solid rgba(212, 175, 55, 0.25) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+.food-card-3d h4 {
+    color: #fbbf24 !important; /* عناوين واضحة وذهبية */
+}
+
+.food-card-3d p {
+    color: #94a3b8 !important; /* نصوص فرعية واضحة */
+}
+
+/* 2. الوضع النهاري (Light Mode) */
 body.light-theme {
-    background-color: #f8fafc !important;
+    background-color: #f1f5f9 !important;
     color: #0f172a !important;
 }
 
-/* تعديل الهيدر وشريط الإعلانات في النهاري */
 body.light-theme header {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-bottom-color: #e2e8f0 !important;
+    background: #ffffff !important;
+    border-bottom-color: #cbd5e1 !important;
 }
 
 body.light-theme header h1, 
@@ -265,40 +290,30 @@ body.light-theme header nav a {
     color: #58081A !important;
 }
 
-/* تعديل كروت العروض والمنيو والسكاشن */
 body.light-theme #offers-section,
 body.light-theme #menu-section,
 body.light-theme section {
-    background-color: #f1f5f9 !important;
+    background-color: #f8fafc !important;
 }
 
-body.light-theme .food-card-3d,
-body.light-theme #offers-container > div,
-body.light-theme #menu-grid > div {
+body.light-theme .food-card-3d {
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important;
 }
 
-/* تحويل ألوان الخطوط داخل الكروت لتكون داكنة وواضحة جداً */
-body.light-theme .food-card-3d h4,
-body.light-theme #offers-container h4,
-body.light-theme #menu-grid h4 {
+body.light-theme .food-card-3d h4 {
     color: #58081A !important;
 }
 
-body.light-theme .food-card-3d p,
-body.light-theme #offers-container p,
-body.light-theme #menu-grid p,
-body.light-theme section h3,
-body.light-theme section p {
+body.light-theme .food-card-3d p {
     color: #334155 !important;
 }
 
 body.light-theme .card-size-btn {
     border-color: #94a3b8 !important;
-    background-color: #f8fafc !important;
-    color: #1e293b !important;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
 }
 
 body.light-theme .card-size-btn[class*="bg-brand-gold"] {
@@ -370,32 +385,31 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
 
     <!-- Main Content -->
     <main id="main-content" class="flex-grow">
-<!-- Hero Section مع خلفية واجهة عجيبة وصورة الوجبة التفاعلية -->
-<section id="hero-bg-section" class="relative text-white py-16 md:py-24 overflow-hidden bg-cover bg-center transition-all duration-500" style="background-image: linear-gradient(to bottom, rgba(88, 8, 26, 0.88), rgba(13, 15, 18, 0.95)), url('agiba.png');">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid md:grid-cols-2 gap-12 items-center">
+<!-- Hero Section خلفية داكنة ملكية تتناسب مع المودين -->
+<section id="hero-bg-section" class="relative text-white py-16 md:py-20 overflow-hidden bg-gradient-to-r from-[#3b0511] via-[#58081A] to-[#1a0207] border-b border-brand-gold/20 shadow-2xl transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid md:grid-cols-2 gap-10 items-center">
         <div class="space-y-6 text-center md:text-right">
-            <span class="inline-block bg-brand-gold/20 text-brand-gold font-extrabold text-sm px-4 py-1.5 rounded-full border border-brand-gold/30">
+            <span class="inline-block bg-brand-gold/20 text-brand-gold font-extrabold text-xs md:text-sm px-4 py-1.5 rounded-full border border-brand-gold/40 shadow-sm">
                 🔥 عجيبه الراعي الرسمي للسعادة
             </span>
-            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight">
                 جوعان؟ <span class="text-brand-gold">عجيبه</span> عندها الحل 😋
             </h2>
-            <p class="text-gray-200 text-lg md:text-xl font-medium max-w-xl">
+            <p class="text-gray-200 text-sm md:text-base font-medium max-w-xl leading-relaxed">
                 أشهى البيتزات، الكريب، الصواريخ، القنبلة والوافل... اطلب دلوقتي أونلاين بضغطة واحدة وسيب الباقي علينا!
             </p>
             <div class="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
-                <a href="#menu-section" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-black px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 text-lg">
+                <a href="#menu-section" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-black px-8 py-3.5 rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 text-base">
                     اطلب الآن 🛒
                 </a>
-                <a href="#menu-section" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold px-8 py-4 rounded-xl transition-all text-lg backdrop-blur-sm">
+                <a href="#menu-section" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold px-8 py-3.5 rounded-xl transition-all text-base backdrop-blur-sm">
                     شوف المنيو
                 </a>
             </div>
         </div>
         <div class="relative flex justify-center">
-            <div class="w-72 h-72 sm:w-96 sm:h-96 bg-brand-gold/20 absolute -inset-4 blur-2xl rounded-full"></div>
-            <!-- صورة الوجبات التفاعلية الجديدة بدلاً من واجهة المحل -->
-            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80" alt="أشهى وجبات عجيبة" class="relative z-10 rounded-2xl shadow-2xl object-cover w-full h-80 sm:h-96 border-4 border-white/20 welcome-bounce transform hover:scale-[1.02] transition-transform duration-300">
+            <div class="w-64 h-64 sm:w-80 sm:h-80 bg-brand-gold/20 absolute -inset-2 blur-3xl rounded-full"></div>
+            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80" alt="أشهى وجبات عجيبة" class="relative z-10 rounded-2xl shadow-2xl object-cover w-full h-72 sm:h-88 border-2 border-brand-gold/40 transform hover:scale-[1.01] transition-transform duration-300">
         </div>
     </div>
 </section>
@@ -418,6 +432,19 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
                     </div>
                 </div>
                 <div id="offers-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+        </section>
+
+        <!-- Digital Menu Section -->
+        <section id="menu-section" class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h3 class="text-4xl font-black text-brand-dark mb-2">منيو مطعم عجيبه الرسمي</h3>
+                    <p class="text-gray-500 font-medium">الأسعار والأحجام الرسمية المعتمدة</p>
+                </div>
+
+                <div id="menu-tabs" class="flex flex-wrap justify-center gap-2 mb-10 border-b border-gray-200 pb-4"></div>
+                <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
             </div>
         </section>
 <!-- قسم لماذا تختار مطعم عجيبة -->
@@ -475,19 +502,6 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
                 </div>
             </div>
         </section>
-        <!-- Digital Menu Section -->
-        <section id="menu-section" class="py-16 bg-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-10">
-                    <h3 class="text-4xl font-black text-brand-dark mb-2">منيو مطعم عجيبه الرسمي</h3>
-                    <p class="text-gray-500 font-medium">الأسعار والأحجام الرسمية المعتمدة</p>
-                </div>
-
-                <div id="menu-tabs" class="flex flex-wrap justify-center gap-2 mb-10 border-b border-gray-200 pb-4"></div>
-                <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-            </div>
-        </section>
-
         <!-- Contact Section -->
         <section id="contact-section" class="py-16 bg-gray-900 text-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-8">
@@ -2444,22 +2458,11 @@ function processOrderSuccess() {
 function toggleDarkMode() {
     const isLight = document.body.classList.toggle('light-theme');
     const icon = document.getElementById('theme-icon');
-    const heroSection = document.getElementById('hero-bg-section');
     
     if (isLight) {
         if (icon) icon.className = "fa-solid fa-sun text-lg text-amber-500";
-        if (heroSection) {
-            heroSection.style.backgroundImage = "linear-gradient(to bottom, rgba(241, 245, 249, 0.92), rgba(226, 232, 240, 0.96)), url('agiba.png')";
-            heroSection.classList.remove('text-white');
-            heroSection.classList.add('text-slate-900');
-        }
     } else {
         if (icon) icon.className = "fa-solid fa-moon text-lg text-amber-400";
-        if (heroSection) {
-            heroSection.style.backgroundImage = "linear-gradient(to bottom, rgba(88, 8, 26, 0.88), rgba(13, 15, 18, 0.95)), url('agiba.png')";
-            heroSection.classList.remove('text-slate-900');
-            heroSection.classList.add('text-white');
-        }
     }
 }
     </script>
