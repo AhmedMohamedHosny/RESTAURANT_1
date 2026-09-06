@@ -819,6 +819,63 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
                 <button id="admin-tab-orders" onclick="switchAdminSubTab('orders')" class="font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg">
                     📋 إدارة الطلبات المباشرة
                 </button>
+                <!-- زر التبويب الجديد -->
+<button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition">
+    <span>➕</span>
+    <span>طلب كاونتر جديد</span>
+</button>
+
+<!-- نافذة إنشاء طلب جديد (POS Modal) -->
+<div id="pos-modal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <!-- الهيدر -->
+        <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold flex items-center gap-2"><span>🛍️</span> إنشاء طلب مباشر (كاونتر)</h3>
+            <button onclick="closePosModal()" class="text-white text-2xl hover:bg-emerald-700 w-8 h-8 rounded-full flex items-center justify-center">&times;</button>
+        </div>
+
+        <!-- جسم النافذة -->
+        <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- الجزء الأيمن: بيانات العميل واختيار الأطعمة -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">اسم العميل (اختياري)</label>
+                    <input type="text" id="pos-customer-name" placeholder="زبون كاونتر" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهاتف (اختياري)</label>
+                    <input type="tel" id="pos-customer-phone" placeholder="01xxxxxxxxx" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">اختر الصنف من المنيو</label>
+                    <div id="pos-menu-items" class="border rounded-lg p-2 max-h-48 overflow-y-auto space-y-2 bg-gray-50">
+                        <!-- يتم تحميل المنيو هنا تلقائياً -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- الجزء الأيسر: ملخص السلة والإنهاء -->
+            <div class="bg-gray-100 p-4 rounded-xl flex flex-col justify-between">
+                <div>
+                    <h4 class="font-bold text-gray-800 border-b pb-2 mb-3">تفاصيل السلة</h4>
+                    <div id="pos-cart-items" class="space-y-2 max-h-56 overflow-y-auto text-sm text-gray-700">
+                        <p class="text-center text-gray-400 mt-4">لم يتم إضافة أصناف بعد</p>
+                    </div>
+                </div>
+
+                <div class="border-t pt-4 mt-4 space-y-3">
+                    <div class="flex justify-between items-center text-lg font-black text-gray-800">
+                        <span>الإجمالي:</span>
+                        <span id="pos-total-price">0 ج.م</span>
+                    </div>
+                    <button onclick="submitPosOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">
+                        حفظ وإرسال الطلب 🚀
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                 <button id="admin-tab-menu" onclick="switchAdminSubTab('menu')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🍔 إدارة المنيو والوفرة
                 </button>
@@ -877,7 +934,60 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
             </div>
         </div>
     </div>
-    
+    <!-- قالب الفاتورة المخصص للطباعة فقط -->
+<div id="print-receipt" class="hidden print:block p-4 font-mono text-black text-xs max-w-[80mm] mx-auto">
+    <div class="text-center border-b pb-2 mb-2">
+        <h2 class="text-lg font-bold">مطعم عجيبه - البدرشين</h2>
+        <p class="text-[10px]">إيصال طلب مباشر (كاونتر)</p>
+        <p id="receipt-date" class="text-[10px] mt-1"></p>
+    </div>
+
+    <div class="mb-2">
+        <p><strong>رقم الطلب:</strong> <span id="receipt-order-id"></span></p>
+        <p><strong>العميل:</strong> <span id="receipt-customer-name"></span></p>
+        <p><strong>الهاتف:</strong> <span id="receipt-customer-phone"></span></p>
+    </div>
+
+    <table class="w-full text-right border-t border-b py-1 mb-2">
+        <thead>
+            <tr class="border-b">
+                <th class="py-1">الصنف</th>
+                <th class="py-1 text-center">العدد</th>
+                <th class="py-1 text-left">السعر</th>
+            </tr>
+        </thead>
+        <tbody id="receipt-items-body">
+            <!-- يتم تعبئة الأصناف هنا تلقائياً -->
+        </tbody>
+    </table>
+
+    <div class="text-left font-bold text-sm border-t pt-2">
+        <span>الإجمالي: </span>
+        <span id="receipt-total"></span> ج.م
+    </div>
+
+    <div class="text-center mt-4 border-t pt-2 text-[10px]">
+        <p>شكراً لزيارتكم! 🍕</p>
+    </div>
+</div>
+
+<!-- تنسيقات CSS لضمان إخفاء بقية الصفحات وطباعة الفاتورة فقط -->
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #print-receipt, #print-receipt * {
+        visibility: visible;
+    }
+    #print-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+</style>
 
     <!-- MAIN JAVASCRIPT APPLICATION LOGIC -->
     <script>
@@ -2655,6 +2765,156 @@ function startHeroSlider() {
 }
 
 window.addEventListener('load', startHeroSlider);
+        let posCart = [];
+
+// فتح النافذة وتحميل أصناف المنيو
+function openPosModal() {
+    posCart = [];
+    updatePosCartUI();
+    document.getElementById('pos-modal').classList.remove('hidden');
+    renderPosMenu();
+}
+
+function closePosModal() {
+    document.getElementById('pos-modal').classList.add('hidden');
+}
+
+// عرض قائمة الأطعمة المتاحة
+function renderPosMenu() {
+    const container = document.getElementById('pos-menu-items');
+    container.innerHTML = '';
+
+    if (!menuData || menuData.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 text-center">لا توجد أصناف متاحة بالمنيو</p>';
+        return;
+    }
+
+    menuData.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flex justify-between items-center bg-white p-2 rounded shadow-sm border text-sm';
+        itemDiv.innerHTML = `
+            <div>
+                <span class="font-bold">${item.name}</span>
+                <span class="text-xs text-gray-500 block">${item.price} ج.م</span>
+            </div>
+            <button onclick="addToPosCart(${index})" class="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-2 py-1 rounded text-xs font-bold">+ إضافة</button>
+        `;
+        container.appendChild(itemDiv);
+    });
+}
+
+// إضافة عنصر للسلة
+function addToPosCart(index) {
+    const item = menuData[index];
+    const existing = posCart.find(i => i.name === item.name);
+
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        posCart.push({ name: item.name, price: Number(item.price), qty: 1 });
+    }
+    updatePosCartUI();
+}
+
+// تحديث عرض السلة والإجمالي
+function updatePosCartUI() {
+    const cartContainer = document.getElementById('pos-cart-items');
+    const totalEl = document.getElementById('pos-total-price');
+
+    if (posCart.length === 0) {
+        cartContainer.innerHTML = '<p class="text-center text-gray-400 mt-4">لم يتم إضافة أصناف بعد</p>';
+        totalEl.innerText = '0 ج.م';
+        return;
+    }
+
+    cartContainer.innerHTML = '';
+    let total = 0;
+
+    posCart.forEach((item, idx) => {
+        const subtotal = item.price * item.qty;
+        total += subtotal;
+
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center border-b pb-1 text-xs';
+        row.innerHTML = `
+            <span>${item.name} (x${item.qty})</span>
+            <div class="flex items-center gap-2">
+                <span class="font-bold">${subtotal} ج.م</span>
+                <button onclick="removePosItem(${idx})" class="text-red-500 text-xs hover:underline">حذف</button>
+            </div>
+        `;
+        cartContainer.appendChild(row);
+    });
+
+    totalEl.innerText = `${total} ج.م`;
+}
+
+function removePosItem(index) {
+    posCart.splice(index, 1);
+    updatePosCartUI();
+}
+
+// دالة طباعة الفاتورة
+function printReceipt(order) {
+    document.getElementById('receipt-order-id').innerText = order.id;
+    document.getElementById('receipt-customer-name').innerText = order.customerName;
+    document.getElementById('receipt-customer-phone').innerText = order.phone;
+    document.getElementById('receipt-date').innerText = new Date().toLocaleString('ar-EG');
+    document.getElementById('receipt-total').innerText = order.totalPrice;
+
+    const itemsBody = document.getElementById('receipt-items-body');
+    itemsBody.innerHTML = '';
+
+    posCart.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="py-1">${item.name}</td>
+            <td class="py-1 text-center">${item.qty}</td>
+            <td class="py-1 text-left">${item.price * item.qty}</td>
+        `;
+        itemsBody.appendChild(row);
+    });
+
+    // إعطاء مهلة قصيرة جداً لتحديث عناصر الواجهة ثم فتح نافذة الطباعة تلقائياً
+    setTimeout(() => {
+        window.print();
+    }, 200);
+}
+
+// دالة حفظ الطلب المعدلة
+function submitPosOrder() {
+    if (posCart.length === 0) {
+        alert('الرجاء إضافة أصناف أولاً!');
+        return;
+    }
+
+    const name = document.getElementById('pos-customer-name').value.trim() || 'زبون كاونتر';
+    const phone = document.getElementById('pos-customer-phone').value.trim() || '---';
+    const total = posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    const newOrder = {
+        id: "AG-" + Math.floor(1000 + Math.random() * 9000),
+        customerName: name,
+        phone: phone,
+        address: "طلب مباشر من المحل (كاونتر)",
+        items: posCart.map(i => `${i.name} x ${i.qty}`),
+        totalPrice: total,
+        status: "NEW",
+        createdAt: new Date().toISOString()
+    };
+
+    // 1. حفظ الطلب في Firebase
+    database.ref('orders/' + newOrder.id).set(newOrder).then(() => {
+        // 2. إغلاق النافذة
+        closePosModal();
+        
+        // 3. إطلاق أمر الطباعة المباشرة تلقائياً
+        printReceipt(newOrder);
+
+    }).catch(err => {
+        alert('حدث خطأ أثناء حفظ الطلب: ' + err.message);
+    });
+}
     </script>
 <!-- Floating WhatsApp Button -->
 <a href="https://wa.me/201142400434?text=%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A9" 
