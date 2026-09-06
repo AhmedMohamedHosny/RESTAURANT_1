@@ -825,54 +825,20 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
     <span>طلب كاونتر جديد</span>
 </button>
 
-<!-- نافذة إنشاء طلب جديد (POS Modal) -->
-<div id="pos-modal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+<!-- نافذة الطلب السريع من المنيو الكامل -->
+<div id="pos-modal" class="fixed inset-0 bg-black/70 hidden backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden">
         <!-- الهيدر -->
-        <div class="bg-emerald-800 text-white p-4 flex justify-between items-center">
-            <h3 class="text-xl font-bold flex items-center gap-2"><span>🛍️</span> إنشاء طلب مباشر (كاونتر)</h3>
-            <button onclick="closePosModal()" class="text-white text-2xl hover:bg-emerald-700 w-8 h-8 rounded-full flex items-center justify-center">&times;</button>
+        <div class="bg-emerald-800 text-white px-6 py-3 flex justify-between items-center shrink-0">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <span>⚡</span> عمل طلب مباشر من المنيو (كاونتر)
+            </h3>
+            <button onclick="closePosModal()" class="text-white text-3xl hover:bg-emerald-700 w-9 h-9 rounded-full flex items-center justify-center transition">&times;</button>
         </div>
 
-        <!-- جسم النافذة -->
-        <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- الجزء الأيمن: بيانات العميل واختيار الأطعمة -->
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">اسم العميل (اختياري)</label>
-                    <input type="text" id="pos-customer-name" placeholder="زبون كاونتر" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهاتف (اختياري)</label>
-                    <input type="tel" id="pos-customer-phone" placeholder="01xxxxxxxxx" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">اختر الصنف من المنيو</label>
-                    <div id="pos-menu-items" class="border rounded-lg p-2 max-h-48 overflow-y-auto space-y-2 bg-gray-50">
-                        <!-- يتم تحميل المنيو هنا تلقائياً -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- الجزء الأيسر: ملخص السلة والإنهاء -->
-            <div class="bg-gray-100 p-4 rounded-xl flex flex-col justify-between">
-                <div>
-                    <h4 class="font-bold text-gray-800 border-b pb-2 mb-3">تفاصيل السلة</h4>
-                    <div id="pos-cart-items" class="space-y-2 max-h-56 overflow-y-auto text-sm text-gray-700">
-                        <p class="text-center text-gray-400 mt-4">لم يتم إضافة أصناف بعد</p>
-                    </div>
-                </div>
-
-                <div class="border-t pt-4 mt-4 space-y-3">
-                    <div class="flex justify-between items-center text-lg font-black text-gray-800">
-                        <span>الإجمالي:</span>
-                        <span id="pos-total-price">0 ج.م</span>
-                    </div>
-                    <button onclick="submitPosOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">
-                        حفظ وإرسال الطلب 🚀
-                    </button>
-                </div>
-            </div>
+        <!-- عرض صفحة المنيو بالكامل -->
+        <div class="flex-1 w-full h-full relative bg-gray-100">
+            <iframe id="pos-iframe" src="" class="w-full h-full border-0"></iframe>
         </div>
     </div>
 </div>
@@ -2346,7 +2312,20 @@ function toggleCustomDateFilter() {
     
     renderAdminDashboard();
 }
+// فتح نافذة المنيو المباشر
+function openPosModal() {
+    const iframe = document.getElementById('pos-iframe');
+    // فتح صفحة المنيو الرئيسية داخل اللوحة
+    iframe.src = window.location.origin + window.location.pathname.replace('admin.html', 'index.html'); 
+    document.getElementById('pos-modal').classList.remove('hidden');
+}
 
+// إغلاق النافذة
+function closePosModal() {
+    const iframe = document.getElementById('pos-iframe');
+    iframe.src = ''; // تفريغ لإيقاف التحميل
+    document.getElementById('pos-modal').classList.add('hidden');
+}
 
 // دالة حذف الأوردر نهائياً
 function deleteOrder(orderId) {
