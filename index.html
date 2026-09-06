@@ -95,7 +95,15 @@ body {
     80% { transform: scale(1) translateY(2px); }
     100% { transform: scale(1) translateY(0); }
 }
+/* حركة ملء شريط التقدم في 5 ثواني */
+@keyframes fillProgressBar {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
 
+.run-progress {
+    animation: fillProgressBar 5s linear infinite;
+}
 .welcome-bounce {
     animation: bounceAndZoom 5s ease-in-out 1;
 }
@@ -421,10 +429,21 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
                 </a>
             </div>
         </div>
-        <div class="relative flex justify-center">
-            <div class="w-72 h-72 sm:w-96 sm:h-96 bg-brand-gold/20 absolute -inset-4 blur-2xl rounded-full"></div>
-            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80" alt="أشهى وجبات عجيبة" class="relative z-10 rounded-2xl shadow-2xl object-cover w-full h-80 sm:h-96 border-4 border-white/20 welcome-bounce transform hover:scale-[1.02] transition-transform duration-300">
+<div class="relative flex justify-center">
+    <div class="w-72 h-72 sm:w-96 sm:h-96 bg-brand-gold/20 absolute -inset-4 blur-2xl rounded-full"></div>
+    
+    <!-- إطار السلايدر -->
+    <div class="relative z-10 w-full h-80 sm:h-96 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 bg-gray-900 group">
+        <!-- الصورة المعروضة -->
+        <img id="hero-slider-img" src="image/offer1.jpg" alt="عروض عجيبة" class="w-full h-full object-cover transition-all duration-700 opacity-100 scale-100">
+        
+        <!-- شريط التقدم المتدرج باللون الذهبي أسفل الصورة -->
+        <div class="absolute bottom-0 left-0 w-full h-2 bg-black/50 backdrop-blur-sm z-20">
+            <div id="hero-progress-bar" class="h-full bg-gradient-to-r from-amber-500 to-brand-gold w-0"></div>
         </div>
+    </div>
+</div>
+        
     </div>
 </section>
 
@@ -2581,6 +2600,47 @@ function toggleDarkMode() {
         if (icon) icon.className = "fa-solid fa-moon text-lg text-amber-400";
     }
 }
+        // قائمة صور العروض داخل مجلد image
+const offerImages = [
+    'image/offer1.jpg',
+    'image/offer2.jpg',
+    'image/offer3.jpg'
+];
+
+let currentOfferIndex = 0;
+
+function startHeroSlider() {
+    const sliderImg = document.getElementById('hero-slider-img');
+    const progressBar = document.getElementById('hero-progress-bar');
+
+    if (!sliderImg || !progressBar) return;
+
+    // تشغيل أنيميشن الشريط الذهبي
+    progressBar.classList.remove('run-progress');
+    void progressBar.offsetWidth; // إعادة تشغيل الأنيميشن
+    progressBar.classList.add('run-progress');
+
+    // تغيير الصورة كل 5 ثواني مع تأثير إختفاء وظهور ناعم
+    setInterval(() => {
+        sliderImg.classList.add('opacity-0', 'scale-105');
+
+        setTimeout(() => {
+            currentOfferIndex = (currentOfferIndex + 1) % offerImages.length;
+            sliderImg.src = offerImages[currentOfferIndex];
+            
+            // التعامل مع امتداد png أو jpg تلقائياً في حال وجود خطأ
+            sliderImg.onerror = () => {
+                sliderImg.src = offerImages[currentOfferIndex].replace('.jpg', '.png');
+            };
+
+            sliderImg.classList.remove('opacity-0', 'scale-105');
+        }, 300);
+
+    }, 5000);
+}
+
+// تشغيل السلايدر تلقائياً فور تحميل الصفحة
+window.addEventListener('load', startHeroSlider);
     </script>
 <!-- Floating WhatsApp Button -->
 <a href="https://wa.me/201142400434?text=%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A9" 
