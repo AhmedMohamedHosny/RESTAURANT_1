@@ -8,8 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
 <!-- Firebase App & Realtime Database SDKs -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<!-- مكتبة تصدير Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>    
     <script>
         tailwind.config = {
             theme: {
@@ -852,6 +854,22 @@ body.pos-mode-active footer { display: none !important; }
     <input type="date" id="custom-date-picker" onchange="renderAdminDashboard()" class="hidden border border-gray-300 rounded-lg px-2 py-1 text-xs font-bold text-gray-800 bg-white focus:outline-none shadow-sm">
 </div>
     <span id="filter-summary-text" class="text-xs font-bold text-gray-500"></span>
+</div>
+
+<!-- شريط تصدير التقارير إلى Excel -->
+<div class="flex flex-wrap items-end gap-3 bg-emerald-50 p-3 rounded-xl border border-emerald-200 shadow-sm mb-4">
+    <div>
+        <label class="block text-[10px] font-bold text-gray-600 mb-1">من تاريخ</label>
+        <input type="date" id="report-from-date" class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 bg-white focus:outline-none">
+    </div>
+    <div>
+        <label class="block text-[10px] font-bold text-gray-600 mb-1">إلى تاريخ</label>
+        <input type="date" id="report-to-date" class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 bg-white focus:outline-none">
+    </div>
+    <button onclick="exportOrdersReportExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-sm transition-colors flex items-center gap-1.5">
+        📊 تصدير تقرير Excel
+    </button>
+    <span class="text-[10px] text-gray-500 font-bold">* اختر يوم واحد بوضع نفس التاريخ في الحقلين، أو اترك الحقلين فارغين لتصدير كل الطلبات</span>
 </div>
                 
                 <div id="admin-orders-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -1941,8 +1959,20 @@ function renderAdminDashboard() {
         }
         return true;
     });
-// ترتيب الطلبات تنازلياً حسب رقم الطلب (الأحدث ركماً يظل على اليمين فوق دائماً)
+// ترتيب الطلبات حسب الحالة أولاً (جديد -> قيد التجهيز -> جاهز/بالتوصيل -> تم التسليم -> ملغي)
+    // وداخل كل حالة، الأحدث رقماً يظهر أولاً
+    const statusOrderRank = {
+        'NEW': 1,
+        'ACCEPTED': 2,
+        'PREPARING': 2,
+        'OUT_FOR_DELIVERY': 3,
+        'DELIVERED': 4,
+        'CANCELLED': 5
+    };
     filteredOrders.sort((a, b) => {
+        const rankA = statusOrderRank[a.status] || 99;
+        const rankB = statusOrderRank[b.status] || 99;
+        if (rankA !== rankB) return rankA - rankB;
         const numA = parseInt(String(a.id).replace(/\D/g, '')) || 0;
         const numB = parseInt(String(b.id).replace(/\D/g, '')) || 0;
         return numB - numA;
@@ -1984,8 +2014,31 @@ function renderAdminDashboard() {
         return;
     }
 
+    let lastRenderedStatusRank = null;
+    const statusGroupLabels = {
+        1: '🆕 طلبات جديدة',
+        2: '👨‍🍳 قيد التجهيز',
+        3: '🛵 جاهز / بالتوصيل',
+        4: '✓ تم التسليم',
+        5: '✕ ملغية'
+    };
+
     container.innerHTML = filteredOrders.map(order => {
+        const currentRank = statusOrderRank[order.status] || 99;
+        let dividerHtml = '';
+        if (currentRank !== lastRenderedStatusRank) {
+            dividerHtml = `
+                <div class="col-span-full flex items-center gap-3 my-2 ${lastRenderedStatusRank === null ? '' : 'pt-4 border-t-2 border-dashed border-gray-300'}">
+                    <span class="font-black text-gray-700 text-sm whitespace-nowrap">${statusGroupLabels[currentRank] || 'طلبات'}</span>
+                    <span class="flex-grow h-px bg-gray-200"></span>
+                </div>
+            `;
+            lastRenderedStatusRank = currentRank;
+        }
+
         let itemsHtml = '';
+
+        
         if (Array.isArray(order.items) && order.items.length > 0) {
             itemsHtml = order.items.map(item => `
                 <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1">
@@ -2044,12 +2097,14 @@ function renderAdminDashboard() {
         }
 
         return `
+        ${dividerHtml}
         <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200 flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-3 pb-2 border-b">
                     <span class="bg-red-700 text-white font-extrabold px-3 py-1 rounded-lg text-sm tracking-wider">
                         #${order.id}
                     </span>
+                    
                     ${statusBadge}
                 </div>
 
@@ -2090,7 +2145,107 @@ function renderAdminDashboard() {
         `;
     }).join('');
 }
+// دالة تصدير تقرير المبيعات لأي يوم أو فترة كـ ملف Excel
+function exportOrdersReportExcel() {
+    const fromVal = document.getElementById('report-from-date').value;
+    const toVal = document.getElementById('report-to-date').value;
 
+    let reportOrders = orders;
+
+    if (fromVal || toVal) {
+        reportOrders = orders.filter(order => {
+            const orderDateStr = order.createdAtDate || '';
+            if (fromVal && orderDateStr < fromVal) return false;
+            if (toVal && orderDateStr > toVal) return false;
+            return true;
+        });
+    }
+
+    if (reportOrders.length === 0) {
+        alert('لا توجد طلبات في الفترة المحددة!');
+        return;
+    }
+
+    // ترتيب من الأقدم للأحدث في التقرير
+    reportOrders.sort((a, b) => (a.createdAtDate || '').localeCompare(b.createdAtDate || ''));
+
+    // 1. تجهيز شيت تفاصيل الطلبات (كل صنف في سطر)
+    const detailsRows = [];
+    reportOrders.forEach(order => {
+        const items = Array.isArray(order.items) ? order.items : [];
+        items.forEach((item, idx) => {
+            detailsRows.push({
+                'رقم الطلب': order.id,
+                'التاريخ': order.createdAtDate || '',
+                'الوقت': order.createdAt || '',
+                'اسم العميل': idx === 0 ? (order.customerName || '') : '',
+                'الهاتف': idx === 0 ? (order.phone || '') : '',
+                'العنوان': idx === 0 ? (order.address || '') : '',
+                'الحالة': idx === 0 ? getStatusArabicLabel(order.status) : '',
+                'الصنف': item.name,
+                'الحجم': item.selectedSize || 'عادي',
+                'الكمية': item.quantity,
+                'سعر الوحدة': item.priceAtPurchase,
+                'إجمالي الصنف': (item.priceAtPurchase || 0) * (item.quantity || 0),
+                'إجمالي الطلب': idx === 0 ? order.total : '',
+                'رسوم التوصيل': idx === 0 ? (order.deliveryFee || 0) : ''
+            });
+        });
+    });
+
+    // 2. تجهيز شيت ملخص الطلبات (طلب واحد في كل سطر)
+    const summaryRows = reportOrders.map(order => ({
+        'رقم الطلب': order.id,
+        'التاريخ': order.createdAtDate || '',
+        'الوقت': order.createdAt || '',
+        'اسم العميل': order.customerName || '',
+        'الهاتف': order.phone || '',
+        'نوع الطلب': order.type === 'DELIVERY' ? 'توصيل' : 'استلام من الفرع',
+        'العنوان': order.address || '',
+        'الحالة': getStatusArabicLabel(order.status),
+        'المجموع الفرعي': order.subtotal || 0,
+        'رسوم التوصيل': order.deliveryFee || 0,
+        'الإجمالي': order.total || 0
+    }));
+
+    // 3. حساب إجمالي المبيعات (فقط الطلبات المُسلَّمة تُحتسب مبيعات فعلية)
+    const totalRevenue = reportOrders.filter(o => o.status === 'DELIVERED').reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const totalDeliveryFees = reportOrders.filter(o => o.status === 'DELIVERED').reduce((sum, o) => sum + Number(o.deliveryFee || 0), 0);
+
+    const totalsRows = [
+        { 'البيان': 'الفترة', 'القيمة': (fromVal || toVal) ? `${fromVal || '...'} إلى ${toVal || '...'}` : 'كل الطلبات' },
+        { 'البيان': 'عدد الطلبات الكلي', 'القيمة': reportOrders.length },
+        { 'البيان': 'عدد الطلبات المُسلَّمة', 'القيمة': reportOrders.filter(o => o.status === 'DELIVERED').length },
+        { 'البيان': 'عدد الطلبات الملغية', 'القيمة': reportOrders.filter(o => o.status === 'CANCELLED').length },
+        { 'البيان': 'إجمالي المبيعات (المُسلَّمة)', 'القيمة': totalRevenue + ' ج.م' },
+        { 'البيان': 'إجمالي رسوم التوصيل', 'القيمة': totalDeliveryFees + ' ج.م' },
+        { 'البيان': 'صافي دخل المطعم', 'القيمة': (totalRevenue - totalDeliveryFees) + ' ج.م' }
+    ];
+
+    // 4. بناء ملف Excel بثلاث شيتات
+    const wb = XLSX.utils.book_new();
+
+    const wsTotals = XLSX.utils.json_to_sheet(totalsRows);
+    XLSX.utils.book_append_sheet(wb, wsTotals, 'الملخص المالي');
+
+    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص الطلبات');
+
+    const wsDetails = XLSX.utils.json_to_sheet(detailsRows);
+    XLSX.utils.book_append_sheet(wb, wsDetails, 'تفاصيل الأصناف');
+
+    // 5. تسمية الملف حسب الفترة المختارة وتنزيله
+    let fileName = 'تقرير_مبيعات_عجيبه';
+    if (fromVal && toVal && fromVal === toVal) {
+        fileName += `_${fromVal}`;
+    } else if (fromVal || toVal) {
+        fileName += `_${fromVal || 'البداية'}_الى_${toVal || 'اليوم'}`;
+    } else {
+        fileName += '_كل_الطلبات';
+    }
+
+    XLSX.writeFile(wb, fileName + '.xlsx');
+}
         function closeSuccessModal() {
             document.getElementById('success-modal').classList.add('hidden');
         }
