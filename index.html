@@ -180,27 +180,37 @@ header {
     margin: 0;
 }
 @media print {
-    html, body {
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+
+    body {
         width: 80mm !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
     }
-    body * { 
-        display: none !important; 
+
+    /* إخفاء كافة عناصر الموقع أثناء الطباعة */
+    body * {
+        visibility: hidden !important;
     }
-    #printable-receipt, #printable-receipt * { 
-        display: block !important; 
-        visibility: visible !important; 
+
+    /* إظهار الفاتورة فقط في المنتصف وبدون هامش أبيض ضخم */
+    #printable-receipt, #printable-receipt * {
+        visibility: visible !important;
     }
+
     #printable-receipt {
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
-        width: 100% !important;
-        padding: 10px !important;
-        color: #000 !important;
+        width: 72mm !important; /* يناسب منطقة الطباعة الفعلية داخل رول 80mm */
+        padding: 4mm !important;
         font-family: monospace, sans-serif !important;
+        color: #000 !important;
+        box-sizing: border-box !important;
     }
 }
     /* تأثير اهتزاز وتكبير زر السلة عند إضافة صنف */
@@ -1321,7 +1331,7 @@ function loadSavedCustomerInfo() {
     if (saved.area && document.getElementById('cust-area')) document.getElementById('cust-area').value = saved.area;
 }
 
-// تحديث دالة تحضير مراجعة الطلب مع المنطقة
+// تحديث دالة تحضير مراجعة الطلب مع المنطقة والتاريخ المحلي الصحيح
 function proceedToReview() {
     const name = document.getElementById('cust-name').value.trim();
     const phone = document.getElementById('cust-phone').value.trim();
@@ -1339,6 +1349,12 @@ function proceedToReview() {
     const total = subtotal + deliveryFee;
 
     const fullAddress = type === 'DELIVERY' ? `${areaName} - ${addressDetails}` : 'استلام من الفرع (البدرشين - ش عباس عناني)';
+
+    // حساب التاريخ والتوقيت المحلي بشكل دقيق
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
 
     pendingOrderData = {
         id: 'AG-' + Math.floor(1000 + Math.random() * 9000),
@@ -1358,8 +1374,8 @@ function proceedToReview() {
         deliveryFee: deliveryFee,
         total: total,
         status: 'NEW',
-        createdAtDate: new Date().toISOString().split('T')[0],
-        createdAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+        createdAtDate: `${yyyy}-${mm}-${dd}`, // تاريخ اليوم المحلي مضبوط (YYYY-MM-DD)
+        createdAt: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true }) // الوقت ص/م
     };
 
     document.getElementById('rev-name').innerText = name;
@@ -1553,15 +1569,20 @@ function openAdminAuth() {
         alert("كلمة المرور غير صحيحة!");
     }
 }
-        function getFormattedArabicDate(dateObj) {
+function getFormattedArabicDate(dateObj) {
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
     const dayName = days[dateObj.getDay()];
+    
+    // استخدام التوقيت المحلي بدقة
     const yyyy = dateObj.getFullYear();
     const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
     const dd = String(dateObj.getDate()).padStart(2, '0');
+    
+    const fullStr = `${yyyy}-${mm}-${dd}`; // YYYY-MM-DD
+    
     return {
-        fullStr: `${yyyy}-${mm}-${dd}`,
-        displayStr: `${dayName} ${yyyy}-${mm}-${dd}`
+        fullStr: fullStr,
+        displayStr: `اليوم ${dayName} ${fullStr}`
     };
 }
 
@@ -1874,11 +1895,17 @@ function renderBlacklistManagement() {
                 default: return 'bg-gray-100 text-gray-800';
             }
         }
-        function printOrderReceipt(orderId) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
+function printOrderReceipt(orderId) {
+    // قراءة الطلبات بأمان من الـ LocalStorage
+    const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    const order = orders.find(o => String(o.id) === String(orderId));
+    
+    if (!order) {
+        alert('لم يتم العثور على بيانات هذا الطلب!');
+        return;
+    }
 
-    // إنشاء حاوية الطباعة
+    // إنشاء أو جلب حاوية الطباعة
     let printContainer = document.getElementById('printable-receipt');
     if (!printContainer) {
         printContainer = document.createElement('div');
@@ -1886,43 +1913,56 @@ function renderBlacklistManagement() {
         document.body.appendChild(printContainer);
     }
 
+    // بناء محتوى الفاتورة المجهزة لطابعة الفواتير 80mm
     printContainer.innerHTML = `
         <div style="text-align:center; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
-            <h2 style="margin:0; font-size:18px;">مطعم عجيبه</h2>
-            <p style="margin:2px 0; font-size:12px;">البدرشين - ش عباس عناني</p>
+            <h2 style="margin:0; font-size:16px;">مطعم عجيبه</h2>
+            <p style="margin:2px 0; font-size:11px;">البدرشين - ش عباس عناني</p>
             <p style="margin:2px 0; font-size:11px;">تليفون: 01127166175</p>
-            <p style="margin:5px 0 0 0; font-size:14px;">رقم الطلب: #${order.id}</p>
+            <p style="margin:5px 0 0 0; font-size:13px;">رقم الطلب: #${order.id}</p>
         </div>
 
         <div style="font-size:11px; margin-bottom:5px; border-bottom:1px dashed #000; padding-bottom:5px;">
-            <p style="margin:2px 0;">العميل: ${order.customerName}</p>
-            <p style="margin:2px 0;">الهاتف: ${order.phone}</p>
-            <p style="margin:2px 0;">العنوان: ${order.address}</p>
-            <p style="margin:2px 0;">الوقت: ${order.createdAt}</p>
+            <p style="margin:2px 0;"><strong>العميل:</strong> ${order.customerName || 'عميل'}</p>
+            <p style="margin:2px 0;"><strong>الهاتف:</strong> ${order.phone || '-'}</p>
+            <p style="margin:2px 0;"><strong>العنوان:</strong> ${order.address || 'استلام من الفرع'}</p>
+            <p style="margin:2px 0;"><strong>الوقت:</strong> ${order.createdAt || ''}</p>
             ${order.notes ? `<p style="margin:2px 0; font-weight:bold;">ملاحظات: ${order.notes}</p>` : ''}
         </div>
 
         <div style="font-size:11px; margin-bottom:5px; border-bottom:1px dashed #000; padding-bottom:5px;">
-            <p style="font-weight:bold; margin:0 0 3px 0;">--- تفاصيل الأصناف (المطبخ) ---</p>
-            ${order.items.map(item => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-                    <span>${item.name} (${item.selectedSize}) × ${item.quantity}</span>
-                    <span>${item.priceAtPurchase * item.quantity}ج</span>
+            <p style="font-weight:bold; text-align:center; margin:0 0 5px 0;">--- تفاصيل الأصناف (المطبخ) ---</p>
+            ${(order.items || []).map(item => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-weight:bold;">
+                    <span>${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
+                    <span>${(item.priceAtPurchase || 0) * item.quantity}ج</span>
                 </div>
-                ${item.selectedExtras.length > 0 ? `<div style="font-size:9px; padding-right:5px;">إضافات: ${item.selectedExtras.join(', ')}</div>` : ''}
+                ${(item.selectedExtras && item.selectedExtras.length > 0) ? `<div style="font-size:9px; padding-right:5px; margin-bottom:2px;">إضافات: ${item.selectedExtras.join(', ')}</div>` : ''}
             `).join('')}
         </div>
 
-        <div style="font-size:12px; font-weight:bold; text-align:left;">
-            <p style="margin:2px 0;">المجموع: ${order.subtotal} ج.م</p>
-            <p style="margin:2px 0;">التوصيل: ${order.deliveryFee} ج.م</p>
-            <p style="margin:4px 0 0 0; font-size:14px;">الإجمالي: ${order.total} ج.م</p>
+        <div style="font-size:11px; font-weight:bold;">
+            <div style="display:flex; justify-content:space-between; margin:2px 0;">
+                <span>المجموع:</span>
+                <span>${order.subtotal || order.total} ج.م</span>
+            </div>
+            ${order.deliveryFee ? `
+            <div style="display:flex; justify-content:space-between; margin:2px 0;">
+                <span>التوصيل:</span>
+                <span>${order.deliveryFee} ج.م</span>
+            </div>` : ''}
+            <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:13px; border-top:1px solid #000; padding-top:3px;">
+                <span>الإجمالي:</span>
+                <span>${order.total} ج.م</span>
+            </div>
         </div>
-        <div style="text-align:center; margin-top:10px; font-size:10px;">
+
+        <div style="text-align:center; margin-top:10px; font-size:10px; font-weight:bold;">
             شكراً لطلبك من عجيبه ❤️
         </div>
     `;
 
+    // تشغيل أمر الطباعة
     window.print();
 }
 
