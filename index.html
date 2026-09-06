@@ -1087,11 +1087,55 @@ function stopKitchenAlert() {
             document.getElementById('search-bar').classList.toggle('hidden');
         }
 
+// دالة استخراج السعر من نص الحجم (مثال: Small (75 ج.م) -> 75)
+        function parsePriceFromSize(sizeStr, defaultPrice) {
+            if (!sizeStr) return defaultPrice;
+            const match = sizeStr.match(/\((\d+)\s*ج\.م\)/);
+            return match ? parseFloat(match[1]) : defaultPrice;
+        }
+
+        // دالة استخراج سعر الإضافة (مثال: مشروم (+20) -> 20)
+        function parsePriceFromExtra(extraStr) {
+            if (!extraStr) return 0;
+            const match = extraStr.match(/\(\+(\d+)\)/);
+            return match ? parseFloat(match[1]) : 0;
+        }
+
+        // دالة تحديث السعر الإجمالي في المودال أوتوماتيكياً
+        function updateModalPriceDisplay() {
+            if (!currentEditingItem) return;
+            
+            // 1. حساب سعر الحجم المختار
+            const basePrice = parsePriceFromSize(currentEditingItem.selectedSize, currentEditingItem.price);
+            
+            // 2. حساب مجموع الإضافات المختارة
+            const extrasTotal = currentEditingItem.selectedExtras.reduce((sum, extra) => sum + parsePriceFromExtra(extra), 0);
+            
+            // 3. السعر النهائي للقطعة الواحدة
+            currentEditingItem.currentUnitPrice = basePrice + extrasTotal;
+            
+            // 4. السعر الكلي مع الكمية
+            const totalPrice = currentEditingItem.currentUnitPrice * currentEditingItem.quantity;
+            
+            const priceEl = document.getElementById('modal-total-price');
+            if (priceEl) {
+                priceEl.innerText = totalPrice + ' ج.م';
+            }
+        }
+
         function openProductModal(itemId) {
             const item = menuItems.find(i => i.id === itemId);
             if (!item) return;
 
-            currentEditingItem = { ...item, selectedSize: item.sizes[0] || 'عادي', selectedExtras: [], quantity: 1 };
+            const initialSize = (item.sizes && item.sizes.length > 0) ? item.sizes[0] : 'عادي';
+
+            currentEditingItem = { 
+                ...item, 
+                selectedSize: initialSize, 
+                selectedExtras: [], 
+                quantity: 1,
+                currentUnitPrice: item.price 
+            };
 
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
@@ -1146,6 +1190,7 @@ function stopKitchenAlert() {
             `;
 
             document.getElementById('product-modal').classList.remove('hidden');
+            updateModalPriceDisplay();
         }
 
         function closeProductModal() {
@@ -1157,6 +1202,9 @@ function stopKitchenAlert() {
             document.querySelectorAll('.size-btn').forEach(b => b.classList.replace('border-brand-dark', 'border-gray-200'));
             document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('bg-amber-50', 'text-brand-dark'));
             btn.classList.add('border-brand-dark', 'bg-amber-50', 'text-brand-dark');
+            
+            // تحديث السعر مباشرة عند اختيار حجم جديد
+            updateModalPriceDisplay();
         }
 
         function toggleProductExtra(extra) {
@@ -1166,35 +1214,37 @@ function stopKitchenAlert() {
             } else {
                 currentEditingItem.selectedExtras.push(extra);
             }
+            // تحديث السعر عند اختيار أو إلغاء أي إضافة
+            updateModalPriceDisplay();
         }
 
         function updateModalQty(delta) {
             currentEditingItem.quantity = Math.max(1, currentEditingItem.quantity + delta);
             document.getElementById('modal-qty').innerText = currentEditingItem.quantity;
-            document.getElementById('modal-total-price').innerText = (currentEditingItem.price * currentEditingItem.quantity) + ' ج.م';
+            updateModalPriceDisplay();
         }
 
-function confirmAddToCart() {
-    cart.push({
-        cartItemId: Date.now().toString(),
-        name: currentEditingItem.name,
-        price: currentEditingItem.currentPrice || currentEditingItem.price,
-        selectedSize: currentEditingItem.selectedSize,
-        selectedExtras: [...currentEditingItem.selectedExtras],
-        quantity: currentEditingItem.quantity,
-        image: currentEditingItem.image
-    });
-    saveCartState();
-    closeProductModal();
-    toggleCartModal();
+        function confirmAddToCart() {
+            cart.push({
+                cartItemId: Date.now().toString(),
+                name: currentEditingItem.name,
+                price: currentEditingItem.currentUnitPrice || currentEditingItem.price,
+                selectedSize: currentEditingItem.selectedSize,
+                selectedExtras: [...currentEditingItem.selectedExtras],
+                quantity: currentEditingItem.quantity,
+                image: currentEditingItem.image
+            });
+            saveCartState();
+            closeProductModal();
+            toggleCartModal();
 
-    // تأثير هزة السلة والتفاعل
-    const cartBtn = document.getElementById('cart-badge')?.parentElement;
-    if (cartBtn) {
-        cartBtn.classList.add('cart-shake');
-        setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
-    }
-}
+            // تأثير هزة السلة والتفاعل
+            const cartBtn = document.getElementById('cart-badge')?.parentElement;
+            if (cartBtn) {
+                cartBtn.classList.add('cart-shake');
+                setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
+            }
+        }
 
         function addOfferToCart(title, price) {
             cart.push({
