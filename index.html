@@ -6,9 +6,10 @@
     <title>عجيبه | AGEEBA RESTAURANT</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
+<!-- Firebase App & Realtime Database SDKs -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -1697,23 +1698,25 @@ function processOrderSuccess() {
 
     pendingOrderData.status = 'NEW';
 
-    // 1. إرسال الطلب أونلاين لقاعدة البيانات بدلاً من الـ localStorage
+    // حفظ الطلب أونلاين في Firebase Realtime Database
     database.ref('orders/' + pendingOrderData.id).set(pendingOrderData)
     .then(() => {
+        // تفريغ السلة
         cart = [];
         saveCartState();
 
+        // عرض رسالة النجاح للعميل
         const successIdEl = document.getElementById('success-order-id');
         if (successIdEl) successIdEl.innerText = '#' + pendingOrderData.id;
 
         const successModal = document.getElementById('success-modal');
         if (successModal) successModal.classList.remove('hidden');
 
-        // ملاحظة: تم إزالة triggerNewOrderAlert() من هنا كي لا تطلق الصفارة لدى العميل!
+        // تنبيه: لا يتم استدعاء triggerNewOrderAlert هنا كي لا تطلق الصفارة عند العميل!
     })
     .catch((error) => {
-        alert("حدث خطأ أثناء إرسال الطلب، يرجى التأكد من الاتصال بالإنترنت.");
-        console.error(error);
+        alert("حدث خطأ في الاتصال بالسيرفر، يرجى المحاولة مرة أخرى.");
+        console.error("Firebase Set Error:", error);
     });
 }
 
@@ -2327,13 +2330,16 @@ function printOrderReceipt(orderId) {
 }
 
 function updateOrderStatus(orderId, newStatus) {
+    // 1. إيقاف الصوت والتنبيه الأصفر فوراً
     dismissBanner();
 
-    // تحديث حالة الطلب أونلاين في Firebase
+    // 2. تحديث الحالة في قاعدة البيانات السحابية
     database.ref('orders/' + orderId).update({
         status: newStatus
     }).then(() => {
         renderAdminDashboard();
+    }).catch((err) => {
+        console.error("Error updating order status:", err);
     });
 }
 
@@ -2428,35 +2434,36 @@ function toggleItemAvailability(itemId) {
         renderMenu(); // تحديث المنيو للعميل تلقائياً
     }
 }
-// 1. إعدادات Firebase (قم بإنشاء مشروع مجاني في Firebase Console واستبدال الإعدادات هنا)
+// إعدادات مشروع Firebase الخاص بك
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSyClqdXtSLE3UFE6aSYmLsapymsSD8zDuBI",
     authDomain: "ageeba-restaurant.firebaseapp.com",
     databaseURL: "https://ageeba-restaurant-default-rtdb.firebaseio.com",
     projectId: "ageeba-restaurant",
-    storageBucket: "ageeba-restaurant.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef"
+    storageBucket: "ageeba-restaurant.firebasestorage.app",
+    messagingSenderId: "335196116280",
+    appId: "1:335196116280:web:d24b1752ebda7d5b7b5dcd",
+    measurementId: "G-FVB0JTCCH3"
 };
 
-// تشغيل الفايربيس
+// تشغيل Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const database = firebase.database();
 
-// 2. الاستماع اللحظي للطلبات على جهاز الكاشير فقط
+// الاستماع المباشر واللحظي للطلبات
 let isFirstLoad = true;
 database.ref('orders').on('value', (snapshot) => {
     const data = snapshot.val();
     orders = data ? Object.values(data) : [];
-    
-    // إذا كانت لوحة الكاشير مفتوحة، قم بإعادة رسم الطلبات
+
+    // إعادة رسم اللوحة إذا كانت مفتوحة
     const adminModal = document.getElementById('admin-dashboard-modal');
     if (adminModal && !adminModal.classList.contains('hidden')) {
         renderAdminDashboard();
         
-        // تشغيل الصفارة والتنبيه للكاشير فقط إذا كان هناك طلب جديد
+        // إطلاق الصفارة والتنبيه للكاشير فقط إذا نزل طلب جديد بعد الفتح
         if (!isFirstLoad) {
             const hasNew = orders.some(o => o.status === 'NEW');
             if (hasNew) {
