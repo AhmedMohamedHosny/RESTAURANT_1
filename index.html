@@ -2379,12 +2379,30 @@ function updateOrderStatus(orderId, newStatus) {
     });
 }
 
-function triggerNewOrderAlert() {
+function triggerNewOrderAlert(orderId) {
     const banner = document.getElementById('new-order-banner');
     if (banner) {
         banner.classList.remove('hidden');
     }
+    
+    // تشغيل جرس التنبيه الأول
     playKitchenAlert();
+
+    // نطق رقم الطلب بصوت واضح باللغة العربية
+    if ('speechSynthesis' in window) {
+        // استخراج الأرقام فقط من رقم الطلب (مثلاً AG-15 تصبح 15)
+        const rawNum = orderId ? String(orderId).replace(/\D/g, '') : '';
+        const speechText = rawNum ? `طلب رقم ${rawNum}` : "يوجد طلب جديد";
+
+        setTimeout(() => {
+            window.speechSynthesis.cancel(); // إيقاف أي صوت سابق
+            const msg = new SpeechSynthesisUtterance(speechText);
+            msg.lang = 'ar-EG'; // النطق باللهجة المصرية/العربية
+            msg.rate = 0.9;     // سرعة متزنة وواضحة
+            msg.pitch = 1.0;
+            window.speechSynthesis.speak(msg);
+        }, 800);
+    }
 }
 
 function dismissBanner() {
@@ -2501,13 +2519,14 @@ database.ref('orders').on('value', (snapshot) => {
     const isAdminOpen = !document.getElementById('admin-dashboard-modal')?.classList.contains('hidden');
     const isAdminLogged = localStorage.getItem('ageeba_admin_logged_in') === 'true';
 
-    // الصفارة والتنبيه يشتغلوا فقط وفقط لو الكاشير فاتح اللوحة أمامه
+// التنبيه والنطق الصوتي يشتغل فقط عند دخول طلب جديد والكاشير فاتح اللوحة
     if ((isAdminOpen || isAdminLogged) && !isFirstLoad) {
-        const hasNew = orders.some(o => o.status === 'NEW');
-        if (hasNew) {
-            triggerNewOrderAlert();
+        const latestNewOrder = orders.find(o => o.status === 'NEW');
+        if (latestNewOrder) {
+            triggerNewOrderAlert(latestNewOrder.id);
         }
     }
+    
     isFirstLoad = false;
 });
 // دالة تعديل السعر المباشر
