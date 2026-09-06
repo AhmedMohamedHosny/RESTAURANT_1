@@ -1676,7 +1676,6 @@ function proceedToReview() {
             document.getElementById('checkout-step-1').classList.remove('hidden');
         }
 
-// دالة التأكيد المباشر وتحويل الطلب لواتساب المطعم بدون أخطاء
 function submitFinalOrder() {
     if (!pendingOrderData) return;
 
@@ -1716,12 +1715,14 @@ function submitFinalOrder() {
         `*التوصيل:* ${pendingOrderData.deliveryFee} ج.م%0A` +
         `*الإجمالي النهائي:* ${pendingOrderData.total} ج.م`;
 
-    // 4. حفظ الطلب في سيستم الكاشير واللوحة أولاً
+    // 4. حفظ الطلب في الـ LocalStorage وتحديث متغير المبيعات واللوحة فوراً
     closeCheckoutModal();
     processOrderSuccess();
 
-    // 5. فتح الواتساب تلقائياً للعميل
-    window.open(`https://wa.me/201127166175?text=${fullWhatsAppMessage}`, '_blank');
+    // 5. فتح الواتساب للعميل بعد الضمان الكامل للحفظ
+    setTimeout(() => {
+        window.open(`https://wa.me/201127166175?text=${fullWhatsAppMessage}`, '_blank');
+    }, 100);
 }
 
 function processOrderSuccess() {
@@ -1732,10 +1733,13 @@ function processOrderSuccess() {
     localStorage.setItem('ageeba_last_order_time', lastOrderTime.toString());
     localStorage.setItem('ageeba_order_count', orderCountInWindow.toString());
 
-    // جلب قائمة الطلبات الحالية وإضافة الطلب الجديد مباشرة للوحة الكاشير
-    orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    orders.unshift(pendingOrderData);
-    saveOrdersState();
+    // 1. استرجاع الأوردرات الحالية وإضافة الجديد أول المصفوفة
+    let currentOrders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    currentOrders.unshift(pendingOrderData);
+    
+    // 2. مزامنة المتغير العام والمحلي
+    orders = currentOrders;
+    localStorage.setItem('ageeba_orders', JSON.stringify(orders));
 
     cart = [];
     saveCartState();
@@ -1750,9 +1754,150 @@ function processOrderSuccess() {
     document.getElementById('success-order-id').innerText = '#' + pendingOrderData.id;
     document.getElementById('success-modal').classList.remove('hidden');
 
-    // تحديث لوحة التحكم مباشرة بالطلب الجديد
+    // 3. إعادة رسم لوحة الكاشير فوراً
     renderAdminDashboard();
     triggerNewOrderAlert();
+}
+
+function renderAdminDashboard() {
+    // إعادة قراءة أحدث بيانات من الذاكرة دائماً
+    orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    const container = document.getElementById('admin-orders-list');
+    if (!container) return;
+
+    const todayObj = new Date();
+    const todayInfo = getFormattedArabicDate(todayObj);
+
+    const filterSelect = document.getElementById('sales-time-filter');
+    const filterValue = filterSelect ? filterSelect.value : 'today';
+    const customDatePicker = document.getElementById('custom-date-picker');
+    const summaryText = document.getElementById('filter-summary-text');
+
+    const filteredOrders = orders.filter(order => {
+        let orderDateObj;
+        if (order.createdAtDate) {
+            orderDateObj = new Date(order.createdAtDate + 'T00:00:00');
+        } else if (order.date) {
+            orderDateObj = new Date(order.date);
+        } else {
+            orderDateObj = todayObj;
+        }
+
+        const orderInfo = getFormattedArabicDate(orderDateObj);
+
+        if (filterValue === 'today') {
+            return orderInfo.fullStr === todayInfo.fullStr;
+        } else if (filterValue === 'yesterday') {
+            const yesterdayObj = new Date(todayObj);
+            yesterdayObj.setDate(todayObj.getDate() - 1);
+            const yesterdayInfo = getFormattedArabicDate(yesterdayObj);
+            return orderInfo.fullStr === yesterdayInfo.fullStr;
+        } else if (filterValue === 'custom') {
+            const selectedDateStr = customDatePicker ? customDatePicker.value : '';
+            return orderInfo.fullStr === selectedDateStr;
+        } else if (filterValue === 'week') {
+            const sevenDaysAgo = new Date(todayObj);
+            sevenDaysAgo.setDate(todayObj.getDate() - 7);
+            return orderDateObj >= sevenDaysAgo;
+        } else if (filterValue === 'month') {
+            const thirtyDaysAgo = new Date(todayObj);
+            thirtyDaysAgo.setDate(todayObj.getDate() - 30);
+            return orderDateObj >= thirtyDaysAgo;
+        }
+        return true;
+    });
+
+    if (summaryText) {
+        if (filterValue === 'today') {
+            summaryText.innerText = `التاريخ المعروض: ${todayInfo.displayStr}`;
+        } else if (filterValue === 'yesterday') {
+            const yesterdayObj = new Date(todayObj);
+            yesterdayObj.setDate(todayObj.getDate() - 1);
+            summaryText.innerText = `التاريخ المعروض: ${getFormattedArabicDate(yesterdayObj).displayStr}`;
+        } else if (filterValue === 'custom' && customDatePicker && customDatePicker.value) {
+            const selectedObj = new Date(customDatePicker.value + 'T00:00:00');
+            summaryText.innerText = `التاريخ المعروض: ${getFormattedArabicDate(selectedObj).displayStr}`;
+        } else {
+            summaryText.innerText = `عرض جميع المبيعات والطلبات`;
+        }
+    }
+
+    // تحديث شارات العدادات العلوية
+    if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
+    if (document.getElementById('stat-revenue')) {
+        const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+        document.getElementById('stat-revenue').innerText = totalSales + ' ج.م';
+    }
+    if (document.getElementById('stat-new')) document.getElementById('stat-new').innerText = filteredOrders.filter(o => o.status === 'NEW').length;
+    if (document.getElementById('stat-prep')) document.getElementById('stat-prep').innerText = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'ACCEPTED').length;
+    if (document.getElementById('stat-ready')) document.getElementById('stat-ready').innerText = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
+    if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length;
+
+    if (filteredOrders.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها لهذا التاريخ المحدد</p>`;
+        return;
+    }
+
+    container.innerHTML = filteredOrders.map(order => {
+        let itemsHtml = '';
+        if (Array.isArray(order.items) && order.items.length > 0) {
+            itemsHtml = order.items.map(item => `
+                <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1">
+                    <span>• ${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
+                    <span>${item.priceAtPurchase * item.quantity} ج.م</span>
+                </div>
+            `).join('');
+        } else {
+            itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
+        }
+
+        const oDateObj = order.createdAtDate ? new Date(order.createdAtDate + 'T00:00:00') : todayObj;
+        const oDateFormatted = getFormattedArabicDate(oDateObj).displayStr;
+        const orderTime = order.createdAt || '';
+
+        // لون الحالة المأخوذة
+        const statusBadge = order.status === 'NEW' 
+            ? '<span class="bg-amber-500 text-white font-extrabold text-xs px-2.5 py-1 rounded-full animate-pulse">طلب جديد 🆕</span>'
+            : `<span class="bg-green-100 text-green-800 font-bold text-xs px-2.5 py-1 rounded-full">✓ ${getStatusArabicLabel(order.status)}</span>`;
+
+        return `
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b">
+                <span class="bg-red-700 text-white font-extrabold px-3 py-1 rounded-lg text-sm tracking-wider">
+                    #${order.id}
+                </span>
+                ${statusBadge}
+            </div>
+
+            <div class="text-right mb-3">
+                <h4 class="font-extrabold text-gray-900 text-base">${order.customerName || 'عميل'}</h4>
+                <p class="text-xs text-gray-500 font-bold mt-0.5">${oDateFormatted} | ${orderTime}</p>
+                <p class="text-xs text-gray-700 font-semibold mt-1"><strong>الهاتف:</strong> ${order.phone || '-'}</p>
+                <p class="text-xs text-gray-700 font-semibold mt-1"><strong>العنوان:</strong> ${order.address || 'استلام من الفرع'}</p>
+                ${order.notes ? `<p class="text-xs text-amber-700 font-bold mt-1 bg-amber-50 p-1 rounded"><strong>ملاحظات:</strong> ${order.notes}</p>` : ''}
+            </div>
+
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
+                <p class="text-xs font-black text-gray-500 mb-2 border-b pb-1">الطلبات:</p>
+                ${itemsHtml}
+            </div>
+
+            <div class="flex justify-between items-center my-3 pt-2 border-t text-base font-black text-gray-900">
+                <span>الإجمالي:</span>
+                <span>${order.total} ج.م</span>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <button onclick="printOrderInvoice('${order.id}')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
+                    🖨️ طباعة الفاتورة (بون المطبخ والدليفري)
+                </button>
+                <button onclick="addToBlacklist('${order.phone}')" class="w-full bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
+                    🚫 إضافة الرقم للقائمة السوداء (Blacklist)
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
 }
 
         function closeSuccessModal() {
@@ -2041,144 +2186,7 @@ function toggleCustomDateFilter() {
     renderAdminDashboard();
 }
 
-// دالة عرض اللوحة المحدثة لدعم الفلترة بتاريخ محدد
-// دالة عرض اللوحة المحدثة لدعم الفلترة بتاريخ محدد وتحديث النص الصحيح
-function renderAdminDashboard() {
-    const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-    const container = document.getElementById('admin-orders-list');
-    if (!container) return;
 
-    const todayObj = new Date();
-    const todayInfo = getFormattedArabicDate(todayObj);
-
-    const filterSelect = document.getElementById('sales-time-filter');
-    const filterValue = filterSelect ? filterSelect.value : 'today';
-    const customDatePicker = document.getElementById('custom-date-picker');
-
-    const summaryText = document.getElementById('filter-summary-text');
-
-    const filteredOrders = orders.filter(order => {
-        let orderDateObj;
-        if (order.createdAtDate) {
-            orderDateObj = new Date(order.createdAtDate + 'T00:00:00');
-        } else if (order.date) {
-            orderDateObj = new Date(order.date);
-        } else {
-            orderDateObj = todayObj;
-        }
-
-        const orderInfo = getFormattedArabicDate(orderDateObj);
-
-        if (filterValue === 'today') {
-            return orderInfo.fullStr === todayInfo.fullStr;
-        } else if (filterValue === 'yesterday') {
-            const yesterdayObj = new Date(todayObj);
-            yesterdayObj.setDate(todayObj.getDate() - 1);
-            const yesterdayInfo = getFormattedArabicDate(yesterdayObj);
-            return orderInfo.fullStr === yesterdayInfo.fullStr;
-        } else if (filterValue === 'custom') {
-            const selectedDateStr = customDatePicker ? customDatePicker.value : '';
-            return orderInfo.fullStr === selectedDateStr;
-        } else if (filterValue === 'week') {
-            const sevenDaysAgo = new Date(todayObj);
-            sevenDaysAgo.setDate(todayObj.getDate() - 7);
-            return orderDateObj >= sevenDaysAgo;
-        } else if (filterValue === 'month') {
-            const thirtyDaysAgo = new Date(todayObj);
-            thirtyDaysAgo.setDate(todayObj.getDate() - 30);
-            return orderDateObj >= thirtyDaysAgo;
-        }
-        return true;
-    });
-
-    // تحديث نص التاريخ المعروض بناءً على الفلتر المختار
-    if (summaryText) {
-        if (filterValue === 'today') {
-            summaryText.innerText = `التاريخ المعروض: ${todayInfo.displayStr}`;
-        } else if (filterValue === 'yesterday') {
-            const yesterdayObj = new Date(todayObj);
-            yesterdayObj.setDate(todayObj.getDate() - 1);
-            summaryText.innerText = `التاريخ المعروض: ${getFormattedArabicDate(yesterdayObj).displayStr}`;
-        } else if (filterValue === 'custom' && customDatePicker && customDatePicker.value) {
-            const selectedObj = new Date(customDatePicker.value + 'T00:00:00');
-            summaryText.innerText = `التاريخ المعروض: ${getFormattedArabicDate(selectedObj).displayStr}`;
-        } else {
-            summaryText.innerText = `عرض جميع المبيعات والطلبات`;
-        }
-    }
-
-    if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
-    if (document.getElementById('stat-revenue')) {
-        const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-        document.getElementById('stat-revenue').innerText = totalSales + ' ج.م';
-    }
-    if (document.getElementById('stat-new')) document.getElementById('stat-new').innerText = filteredOrders.filter(o => o.status === 'NEW').length;
-    if (document.getElementById('stat-prep')) document.getElementById('stat-prep').innerText = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'ACCEPTED').length;
-    if (document.getElementById('stat-ready')) document.getElementById('stat-ready').innerText = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
-    if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length;
-
-    if (filteredOrders.length === 0) {
-        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها لهذا التاريخ المحدد</p>`;
-        return;
-    }
-
-    container.innerHTML = filteredOrders.map(order => {
-        let itemsHtml = '';
-        if (Array.isArray(order.items) && order.items.length > 0) {
-            itemsHtml = order.items.map(item => `
-                <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1">
-                    <span>• ${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
-                    <span>${item.priceAtPurchase * item.quantity} ج.م</span>
-                </div>
-            `).join('');
-        } else {
-            itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
-        }
-
-        const oDateObj = order.createdAtDate ? new Date(order.createdAtDate + 'T00:00:00') : todayObj;
-        const oDateFormatted = getFormattedArabicDate(oDateObj).displayStr;
-        const orderTime = order.createdAt || '';
-
-        return `
-        <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200">
-            <div class="flex justify-between items-center mb-3 pb-2 border-b">
-                <span class="bg-red-700 text-white font-extrabold px-3 py-1 rounded-lg text-sm tracking-wider">
-                    #${order.id}
-                </span>
-                <span class="bg-green-100 text-green-800 font-bold text-xs px-2.5 py-1 rounded-full">
-                    ✓ ${order.status || 'تم التسليم'}
-                </span>
-            </div>
-
-            <div class="text-right mb-3">
-                <h4 class="font-extrabold text-gray-900 text-base">${order.customerName || 'عميل'}</h4>
-                <p class="text-xs text-gray-500 font-bold mt-0.5">${oDateFormatted} | ${orderTime}</p>
-                <p class="text-xs text-gray-700 font-semibold mt-1"><strong>العنوان:</strong> ${order.address || 'استلام من الفرع'}</p>
-                ${order.notes ? `<p class="text-xs text-amber-700 font-bold mt-1 bg-amber-50 p-1 rounded"><strong>ملاحظات:</strong> ${order.notes}</p>` : ''}
-            </div>
-
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
-                <p class="text-xs font-black text-gray-500 mb-2 border-b pb-1">الطلبات:</p>
-                ${itemsHtml}
-            </div>
-
-            <div class="flex justify-between items-center my-3 pt-2 border-t text-base font-black text-gray-900">
-                <span>الإجمالي:</span>
-                <span>${order.total} ج.م</span>
-            </div>
-
-            <div class="space-y-2 pt-2">
-                <button onclick="printOrderInvoice('${order.id}')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
-                    🖨️ طباعة الفاتورة (بون المطبخ والدليفري)
-                </button>
-                <button onclick="addToBlacklist('${order.phone}')" class="w-full bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
-                    🚫 إضافة الرقم للقائمة السوداء (Blacklist)
-                </button>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
 // دالة حذف الأوردر نهائياً
 function deleteOrder(orderId) {
     if (confirm("هل أنت تأكد من حذف هذا الأوردر نهائياً؟ سيتم خصم قيمته من المبيعات.")) {
