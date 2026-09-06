@@ -2746,23 +2746,7 @@ function startHeroSlider() {
 window.addEventListener('load', startHeroSlider);
         let posCart = [];
 
-// فتح النافذة وقراءة المنيو مباشرة من Firebase
-function openPosModal() {
-    posCart = [];
-    updatePosCartUI();
-    document.getElementById('pos-modal').classList.remove('hidden');
-    
-    // جلب المنيو مباشرة لضمان ظهوره
-    const menuContainer = document.getElementById('pos-menu-items');
-    menuContainer.innerHTML = '<p class="text-center text-gray-500 py-4">جاري تحميل المنيو...</p>';
 
-    database.ref('menu').once('value').then(snapshot => {
-        const menuData = snapshot.val();
-        renderPosMenu(menuData);
-    }).catch(err => {
-        menuContainer.innerHTML = '<p class="text-center text-red-500 py-4">حدث خطأ في تحميل المنيو</p>';
-    });
-}
 
 // عرض عناصر المنيو بطريقة واضحة وسهلة للاختيار
 function renderPosMenu(menuData) {
@@ -2814,9 +2798,7 @@ function addToPosCart(name, price) {
     updatePosCartUI();
 }
 
-function closePosModal() {
-    document.getElementById('pos-modal').classList.add('hidden');
-}
+
 
 
 
