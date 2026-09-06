@@ -1684,132 +1684,92 @@ function renderZReport() {
     `;
 }
 
-// دالة حساب وعرض المبيعات حسب الفلتر الزمني المختار
 function renderAdminDashboard() {
-    const filterType = document.getElementById('sales-time-filter')?.value || 'today';
-    const now = new Date();
-    
-    // إعداد التواريخ المحددة للفلترة
-    const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    
-    const yesterdayDate = new Date(now);
-    yesterdayDate.setDate(now.getDate() - 1);
-    const yesterdayStr = new Date(yesterdayDate.getTime() - (yesterdayDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
+    const container = document.getElementById('admin-orders-container'); // تأكد من اسم الـ ID عندك
+    if (!container) return;
 
-    const weekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-    const monthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    // 1. إعداد تاريخ اليوم بدقة (السنة - الشهر - اليوم)
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // تصفية الأوردرات حسب الوقت
-    let filteredOrders = orders.filter(order => {
-        const orderDateStr = order.createdAtDate || todayStr;
-        const orderDate = new Date(orderDateStr);
+    // 2. فلترة الطلبات الخاصة باليوم فقط
+    const filterSelect = document.getElementById('admin-date-filter');
+    const filterValue = filterSelect ? filterSelect.value : 'today';
 
-        if (filterType === 'today') return orderDateStr === todayStr;
-        if (filterType === 'yesterday') return orderDateStr === yesterdayStr;
-        if (filterType === 'week') return orderDate >= weekAgo;
-        if (filterType === 'month') return orderDate >= monthAgo;
-        return true; // الكل
+    const filteredOrders = orders.filter(order => {
+        if (filterValue === 'today') {
+            const orderDate = new Date(order.createdAt || order.date);
+            const orderDateStr = orderDate.toISOString().split('T')[0];
+            return orderDateStr === todayStr;
+        }
+        return true;
     });
 
-    // إحصائيات الفلتر المحدد
-    const newCount = filteredOrders.filter(o => o.status === 'NEW').length;
-    const prepCount = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'ACCEPTED').length;
-    const readyCount = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
-    const doneCount = filteredOrders.filter(o => o.status === 'DELIVERED').length;
-    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.total, 0);
-
-    // تحديث كروت الإحصائيات العلوية
-    document.getElementById('stat-new').innerText = newCount;
-    document.getElementById('stat-prep').innerText = prepCount;
-    document.getElementById('stat-ready').innerText = readyCount;
-    document.getElementById('stat-done').innerText = doneCount;
-    document.getElementById('stat-total').innerText = filteredOrders.length;
-    document.getElementById('stat-revenue').innerText = totalRevenue + ' ج.م';
-
-    const filterTextMap = {
-        today: 'مبيعات اليوم',
-        yesterday: 'مبيعات أمس',
-        week: 'مبيعات آخر 7 أيام',
-        month: 'مبيعات آخر 30 يوم',
-        all: 'إجمالي كل المبيعات المسجلة'
-    };
-    if (document.getElementById('filter-summary-text')) {
-        document.getElementById('filter-summary-text').innerText = `${filterTextMap[filterType]}: (${totalRevenue} ج.م) - عدد الأوردرات: (${filteredOrders.length})`;
-    }
-
-    // عرض الأوردرات المفلترة
-    const container = document.getElementById('admin-orders-list');
-    if (filteredOrders.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8 font-bold">لا توجد طلبات في هذه الفترة المحددة.</p>';
-        return;
-    }
-
-    container.innerHTML = filteredOrders.map(order => `
-        <div class="bg-white rounded-2xl border-2 ${order.status === 'NEW' ? 'border-amber-400 shadow-md' : 'border-gray-200'} p-5 space-y-4">
-            <div class="flex justify-between items-start border-b pb-3 relative">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-black bg-gray-100 px-2 py-1 rounded">#${order.id}</span>
-                        <!-- زر الـ X السريع للحذف المباشر -->
-                        <button onclick="deleteOrder('${order.id}')" title="حذف الأوردر" class="text-red-500 hover:text-red-700 hover:bg-red-50 w-6 h-6 rounded-full flex items-center justify-center font-black text-sm transition-colors border border-red-200">
-                            ✕
-                        </button>
-                    </div>
-                    <h4 class="font-black text-gray-900 text-base mt-1">${order.customerName}</h4>
-                    <p class="text-xs text-gray-500">${order.phone} | ${order.createdAtDate || ''} ${order.createdAt}</p>
+    // 3. عرض الطلبات
+    container.innerHTML = filteredOrders.map(order => {
+        // تجهيز عرض الأصناف بشكل واضح
+        let itemsHtml = '';
+        if (Array.isArray(order.items) && order.items.length > 0) {
+            itemsHtml = order.items.map(item => `
+                <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1">
+                    <span>• ${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
+                    <span>${item.priceAtPurchase * item.quantity} ج.م</span>
                 </div>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-full ${getStatusBadgeClass(order.status)}">
-                    ${getStatusArabicLabel(order.status)}
+            `).join('');
+        } else {
+            itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
+        }
+
+        // تنسيق الوقت والتاريخ
+        const orderTime = new Date(order.createdAt || order.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        const orderDateFormatted = new Date(order.createdAt || order.date).toLocaleDateString('ar-EG');
+
+        return `
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200">
+            <!-- الهيدر: كود الطلب واضح جداً + الحالة -->
+            <div class="flex justify-between items-center mb-3 pb-2 border-b">
+                <span class="bg-red-700 text-white font-extrabold px-3 py-1 rounded-lg text-sm tracking-wider">
+                    #${order.id}
+                </span>
+                <span class="bg-green-100 text-green-800 font-bold text-xs px-2.5 py-1 rounded-full">
+                    ✓ ${order.status || 'تم التسليم'}
                 </span>
             </div>
 
-            <div class="space-y-1 text-xs text-gray-700">
-                <p><strong>العنوان:</strong> ${order.address}</p>
-                ${order.notes ? `<p class="text-amber-800"><strong>ملاحظات:</strong> ${order.notes}</p>` : ''}
+            <!-- بيانات العميل -->
+            <div class="text-right mb-3">
+                <h4 class="font-extrabold text-gray-900 text-base">${order.customerName || 'عميل'}</h4>
+                <p class="text-xs text-gray-500 font-bold mt-0.5">${orderDateFormatted} | ${orderTime}</p>
+                <p class="text-xs text-gray-700 font-semibold mt-1"><strong>العنوان:</strong> ${order.address || 'استلام من الفرع'}</p>
+                ${order.notes ? `<p class="text-xs text-amber-700 font-bold mt-1 bg-amber-50 p-1 rounded"><strong>ملاحظات:</strong> ${order.notes}</p>` : ''}
             </div>
 
-            <div class="border-t border-b py-2 space-y-1 text-xs">
-                <span class="font-bold text-gray-800 block mb-1">الطلبات:</span>
-                ${order.items.map(i => `
-                    <div class="flex justify-between">
-                        <span>${i.name} (${i.selectedSize}) × ${i.quantity}</span>
-                        <span class="font-bold">${i.priceAtPurchase * i.quantity} ج.م</span>
-                    </div>
-                `).join('')}
+            <!-- تفاصيل الطلبات (الأصناف) -->
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
+                <p class="text-xs font-black text-gray-500 mb-2 border-b pb-1">الطلبات:</p>
+                ${itemsHtml}
             </div>
 
-            <div class="flex justify-between items-center font-black text-base text-brand-dark">
+            <!-- الإجمالي -->
+            <div class="flex justify-between items-center my-3 pt-2 border-t text-base font-black text-gray-900">
                 <span>الإجمالي:</span>
-                <span>${order.total} ج.م</span>
+                <span class="text-red-700 text-lg">${order.total} ج.م</span>
             </div>
 
-            <div class="pt-2 flex flex-col gap-1.5 border-t pt-3">
-                <button onclick="printOrderReceipt('${order.id}')" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-2">
+            <!-- الأزرار -->
+            <div class="space-y-2 pt-2">
+                <button onclick="printOrderInvoice('${order.id}')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
                     🖨️ طباعة الفاتورة (بون المطبخ والدليفري)
                 </button>
-
-                ${order.status === 'NEW' ? `
-                    <button onclick="stopKitchenAlert(); updateOrderStatus('${order.id}', 'ACCEPTED')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg text-xs">قبول الطلب ✓</button>
-                    <button onclick="stopKitchenAlert(); updateOrderStatus('${order.id}', 'CANCELLED')" class="w-full bg-red-100 text-red-700 font-bold py-2 rounded-lg text-xs">رفض الطلب</button>
-                ` : ''}
-                ${order.status === 'ACCEPTED' ? `
-                    <button onclick="updateOrderStatus('${order.id}', 'PREPARING')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs">بدء التجهيز 👨‍🍳</button>
-                ` : ''}
-                ${order.status === 'PREPARING' ? `
-                    <button onclick="updateOrderStatus('${order.id}', 'OUT_FOR_DELIVERY')" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-lg text-xs">خرج للتوصيل 🛵</button>
-                ` : ''}
-                ${order.status === 'OUT_FOR_DELIVERY' ? `
-                    <button onclick="updateOrderStatus('${order.id}', 'DELIVERED')" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 rounded-lg text-xs">تم التسليم ✓</button>
-                ` : ''}
-
-                <button onclick="addToBlacklist('${order.phone}')" class="w-full bg-red-800 hover:bg-red-900 text-white font-bold py-1.5 rounded-lg text-[11px]">
+                <button onclick="addToBlacklist('${order.phone}')" class="w-full bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
                     🚫 إضافة الرقم للقائمة السوداء (Blacklist)
                 </button>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
-
 // دالة حذف الأوردر نهائياً
 function deleteOrder(orderId) {
     if (confirm("هل أنت تأكد من حذف هذا الأوردر نهائياً؟ سيتم خصم قيمته من المبيعات.")) {
