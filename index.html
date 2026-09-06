@@ -68,6 +68,11 @@ body {
     transition: opacity 0.4s ease;
     pointer-events: none;
 }
+    /* إخفاء زر الواتساب التلقائي فور فتح مودال الكاشير */
+#admin-dashboard-modal:not(.hidden) ~ .whatsapp-btn,
+#admin-dashboard-modal:not(.hidden) ~ a[href*="wa.me"] {
+    display: none !important;
+}
 
 .food-card-3d:hover {
     transform: translateY(-10px) rotateX(4deg) rotateY(-2deg) scale(1.02);
@@ -1686,29 +1691,18 @@ function renderZReport() {
 
 function renderAdminDashboard() {
     const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
-const container = document.getElementById('admin-orders-list');
-    
-    // تحديث أرقام الإحصائيات العلوية بناءً على الطلبات المعروضة
-    if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
-    if (document.getElementById('stat-revenue')) {
-        const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-        document.getElementById('stat-revenue').innerText = totalSales + ' ج.م';
-    }
-    if (document.getElementById('stat-new')) document.getElementById('stat-new').innerText = filteredOrders.filter(o => o.status === 'NEW').length;
-    if (document.getElementById('stat-prep')) document.getElementById('stat-prep').innerText = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'ACCEPTED').length;
-    if (document.getElementById('stat-ready')) document.getElementById('stat-ready').innerText = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
-    if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length; 
-    
+    const container = document.getElementById('admin-orders-list');
     if (!container) return;
 
-    // 1. إعداد تاريخ اليوم بدقة (السنة - الشهر - اليوم)
+    // 1. تاريخ اليوم
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayStr = today.toISOString().split('T')[0];
 
-// 2. ربط الـ ID الصحيح للفلتر وحساب الفلترة
+    // 2. قراءة قيمة الفلتر
     const filterSelect = document.getElementById('sales-time-filter');
     const filterValue = filterSelect ? filterSelect.value : 'all';
 
+    // 3. تعريف filteredOrders أولاً قبل أي استخدام له
     const filteredOrders = orders.filter(order => {
         const orderDate = new Date(order.createdAtDate || order.createdAt || order.date);
         
@@ -1728,14 +1722,27 @@ const container = document.getElementById('admin-orders-list');
             thirtyDaysAgo.setDate(today.getDate() - 30);
             return orderDate >= thirtyDaysAgo;
         }
-        
-        // عند اختيار "all" (كل الطلبات)
-        return true; 
+        return true; // في حال اختيار 'all'
     });
 
-    // 3. عرض الطلبات
+    // 4. تحديث الإحصائيات الآن بعد تعريف filteredOrders
+    if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
+    if (document.getElementById('stat-revenue')) {
+        const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+        document.getElementById('stat-revenue').innerText = totalSales + ' ج.م';
+    }
+    if (document.getElementById('stat-new')) document.getElementById('stat-new').innerText = filteredOrders.filter(o => o.status === 'NEW').length;
+    if (document.getElementById('stat-prep')) document.getElementById('stat-prep').innerText = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'ACCEPTED').length;
+    if (document.getElementById('stat-ready')) document.getElementById('stat-ready').innerText = filteredOrders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
+    if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length;
+
+    // 5. عرض الطلبات
+    if (filteredOrders.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها حالياً</p>`;
+        return;
+    }
+
     container.innerHTML = filteredOrders.map(order => {
-        // تجهيز عرض الأصناف بشكل واضح
         let itemsHtml = '';
         if (Array.isArray(order.items) && order.items.length > 0) {
             itemsHtml = order.items.map(item => `
@@ -1748,13 +1755,11 @@ const container = document.getElementById('admin-orders-list');
             itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
         }
 
-        // تنسيق الوقت والتاريخ
         const orderTime = new Date(order.createdAt || order.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         const orderDateFormatted = new Date(order.createdAt || order.date).toLocaleDateString('ar-EG');
 
         return `
         <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-gray-200">
-            <!-- الهيدر: كود الطلب واضح جداً + الحالة -->
             <div class="flex justify-between items-center mb-3 pb-2 border-b">
                 <span class="bg-red-700 text-white font-extrabold px-3 py-1 rounded-lg text-sm tracking-wider">
                     #${order.id}
@@ -1764,7 +1769,6 @@ const container = document.getElementById('admin-orders-list');
                 </span>
             </div>
 
-            <!-- بيانات العميل -->
             <div class="text-right mb-3">
                 <h4 class="font-extrabold text-gray-900 text-base">${order.customerName || 'عميل'}</h4>
                 <p class="text-xs text-gray-500 font-bold mt-0.5">${orderDateFormatted} | ${orderTime}</p>
@@ -1772,19 +1776,16 @@ const container = document.getElementById('admin-orders-list');
                 ${order.notes ? `<p class="text-xs text-amber-700 font-bold mt-1 bg-amber-50 p-1 rounded"><strong>ملاحظات:</strong> ${order.notes}</p>` : ''}
             </div>
 
-            <!-- تفاصيل الطلبات (الأصناف) -->
             <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-3">
                 <p class="text-xs font-black text-gray-500 mb-2 border-b pb-1">الطلبات:</p>
                 ${itemsHtml}
             </div>
 
-            <!-- الإجمالي -->
             <div class="flex justify-between items-center my-3 pt-2 border-t text-base font-black text-gray-900">
                 <span>الإجمالي:</span>
                 <span class="text-red-700 text-lg">${order.total} ج.م</span>
             </div>
 
-            <!-- الأزرار -->
             <div class="space-y-2 pt-2">
                 <button onclick="printOrderInvoice('${order.id}')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
                     🖨️ طباعة الفاتورة (بون المطبخ والدليفري)
