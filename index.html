@@ -342,6 +342,10 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
     font-weight: 900 !important;
     border: 1px solid #d1d5db !important;
 }
+    /* وضع الكاونتر: إظهار المنيو فقط */
+body.pos-mode-active > div:first-child { display: none !important; }
+body.pos-mode-active #main-content > section:not(#menu-section) { display: none !important; }
+body.pos-mode-active footer { display: none !important; }
 </style>
 </head>
 <body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
@@ -1112,10 +1116,17 @@ window.addEventListener('DOMContentLoaded', () => {
             loadSavedCustomerInfo();
             updateCartBadge();
             // فحص ما إذا كان الكاشير داخل اللوحة قبل التحديث
-            if (localStorage.getItem('ageeba_admin_logged_in') === 'true') {
+            // وضع الكاونتر (جوه الـ iframe) - يظهر المنيو فقط بدون فتح لوحة الكاشير
+            const isPosMode = new URLSearchParams(window.location.search).get('pos_mode') === '1';
+            if (isPosMode) {
+                document.body.classList.add('pos-mode-active');
+                const checkoutBtn = document.querySelector('#cart-modal button[onclick="goToCheckout()"]');
+                if (checkoutBtn) checkoutBtn.innerText = 'تأكيد الطلب وطباعة الفاتورة 🖨️';
+            } else if (localStorage.getItem('ageeba_admin_logged_in') === 'true') {
                 document.getElementById('admin-dashboard-modal').classList.remove('hidden');
                 renderAdminDashboard();
             }
+    
         });
 
         function saveMenuState() {
@@ -1632,16 +1643,61 @@ document.getElementById('cart-total').innerText = (subtotal + delivery) + ' ج.�
             saveCartState();
             renderCartItems();
         }
-
         function goToCheckout() {
             if (cart.length === 0) {
                 alert('سلة الطلبات فارغة!');
+                return;
+            }
+            if (document.body.classList.contains('pos-mode-active')) {
+                submitCounterOrderDirect();
                 return;
             }
             toggleCartModal();
             document.getElementById('checkout-step-1').classList.remove('hidden');
             document.getElementById('checkout-step-2').classList.add('hidden');
             document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        // طلب كاونتر (وجه لوجه): يحفظ الأوردر ويطبع الفاتورة فورًا بدون فورم بيانات
+        function submitCounterOrderDirect() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const todayOrdersCount = orders.filter(o => o.createdAtDate === `${yyyy}-${mm}-${dd}`).length;
+
+            const counterOrder = {
+                id: 'AG-' + (todayOrdersCount + 1),
+                customerName: 'زبون كاونتر (وجه لوجه)',
+                phone: '-',
+                type: 'PICKUP',
+                address: 'استلام من الفرع - طلب كاونتر',
+                notes: '',
+                items: cart.map(i => ({
+                    name: i.name,
+                    quantity: i.quantity,
+                    priceAtPurchase: i.price,
+                    selectedSize: i.selectedSize,
+                    selectedExtras: i.selectedExtras
+                })),
+                subtotal: subtotal,
+                deliveryFee: 0,
+                total: subtotal,
+                status: 'DELIVERED',
+                createdAtDate: `${yyyy}-${mm}-${dd}`,
+                createdAt: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
+            };
+
+            database.ref('orders/' + counterOrder.id).set(counterOrder).then(() => {
+                cart = [];
+                saveCartState();
+                toggleCartModal();
+                printReceiptForOrder(counterOrder);
+            }).catch((error) => {
+                alert('حدث خطأ أثناء حفظ الطلب، حاول مرة أخرى.');
+                console.error(error);
+            });
         }
 
         function closeCheckoutModal() {
@@ -2298,7 +2354,7 @@ function openPosModal() {
     const iframe = document.getElementById('pos-iframe');
     
     if (modal && iframe) {
-        iframe.src = window.location.href; // يحمل نفس الصفحة داخل النافذة
+iframe.src = window.location.href.split('?')[0].split('#')[0] + '?pos_mode=1#menu-section';        
         modal.classList.remove('hidden');
     }
 }
@@ -2371,15 +2427,15 @@ function renderBlacklistManagement() {
             }
         }
 function printOrderReceipt(orderId) {
-    // البحث مباشرة في قائمة الطلبات الحية القادمة من Firebase
     const order = orders.find(o => String(o.id) === String(orderId) || String(o.id) === 'AG-' + String(orderId));
-    
     if (!order) {
         alert('لم يتم العثور على بيانات هذا الطلب!');
         return;
     }
+    printReceiptForOrder(order);
+}
 
-    // إنشاء أو جلب حاوية الطباعة
+function printReceiptForOrder(order) {
     let printContainer = document.getElementById('printable-receipt');
     if (!printContainer) {
         printContainer = document.createElement('div');
@@ -2387,7 +2443,6 @@ function printOrderReceipt(orderId) {
         document.body.appendChild(printContainer);
     }
 
-    // بناء محتوى الفاتورة المجهزة لطابعة الفواتير 80mm
     printContainer.innerHTML = `
         <div style="text-align:center; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
             <h2 style="margin:0; font-size:16px;">مطعم عجيبه</h2>
@@ -2436,7 +2491,6 @@ function printOrderReceipt(orderId) {
         </div>
     `;
 
-    // تشغيل أمر الطباعة
     window.print();
 }
 
