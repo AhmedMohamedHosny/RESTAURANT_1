@@ -698,16 +698,20 @@ header {
 
             <div id="admin-view-orders" class="space-y-4">
 <div class="flex flex-wrap justify-between items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-sm mb-4">
-    <div class="flex items-center gap-2">
-        <span class="text-xs font-bold text-gray-600">عرض مبيعات:</span>
-        <select id="sales-time-filter" onchange="renderAdminDashboard()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-bold text-brand-dark bg-gray-50 focus:outline-none">
-            <option value="today" selected>اليوم 📅</option>
-            <option value="yesterday">أمس ⏳</option>
-            <option value="week">آخر 7 أيام 📊</option>
-            <option value="month">آخر 30 يوم 📆</option>
-            <option value="all">كل الطلبات 📋</option>
-        </select>
-    </div>
+<div class="flex items-center gap-2">
+    <span class="text-xs font-bold text-gray-600">عرض مبيعات:</span>
+    <select id="sales-time-filter" onchange="toggleCustomDateFilter()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-bold text-brand-dark bg-gray-50 focus:outline-none">
+        <option value="today" selected>اليوم 📅</option>
+        <option value="yesterday">أمس ⏳</option>
+        <option value="custom">تاريخ محدد 📆</option>
+        <option value="week">آخر 7 أيام 📊</option>
+        <option value="month">آخر 30 يوم 📆</option>
+        <option value="all">كل الطلبات 📋</option>
+    </select>
+    
+    <!-- حقل اختيار التاريخ (يظهر عند اختيار تاريخ محدد) -->
+    <input type="date" id="custom-date-picker" onchange="renderAdminDashboard()" class="hidden border border-gray-300 rounded-lg px-2 py-1 text-xs font-bold text-gray-800 bg-white focus:outline-none shadow-sm">
+</div>
     <span id="filter-summary-text" class="text-xs font-bold text-gray-500"></span>
 </div>
                 
@@ -1721,6 +1725,29 @@ function renderZReport() {
     `;
 }
 
+// إظهار/إخفاء حقل اختيار التاريخ المخصص
+function toggleCustomDateFilter() {
+    const filterValue = document.getElementById('sales-time-filter').value;
+    const datePicker = document.getElementById('custom-date-picker');
+    
+    if (filterValue === 'custom') {
+        datePicker.classList.remove('hidden');
+        if (!datePicker.value) {
+            // تعيين تاريخ اليوم كافتراضي عند الفتح أول مرة
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            datePicker.value = `${yyyy}-${mm}-${dd}`;
+        }
+    } else {
+        datePicker.classList.add('hidden');
+    }
+    
+    renderAdminDashboard();
+}
+
+// دالة عرض اللوحة المحدثة لدعم الفلترة بتاريخ محدد
 function renderAdminDashboard() {
     const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
     const container = document.getElementById('admin-orders-list');
@@ -1731,9 +1758,9 @@ function renderAdminDashboard() {
 
     const filterSelect = document.getElementById('sales-time-filter');
     const filterValue = filterSelect ? filterSelect.value : 'today';
+    const customDatePicker = document.getElementById('custom-date-picker');
 
     const summaryText = document.getElementById('filter-summary-text');
-    if (summaryText) summaryText.innerText = `التاريخ الحالي: ${todayInfo.displayStr}`;
 
     const filteredOrders = orders.filter(order => {
         let orderDateObj;
@@ -1754,6 +1781,9 @@ function renderAdminDashboard() {
             yesterdayObj.setDate(todayObj.getDate() - 1);
             const yesterdayInfo = getFormattedArabicDate(yesterdayObj);
             return orderInfo.fullStr === yesterdayInfo.fullStr;
+        } else if (filterValue === 'custom') {
+            const selectedDateStr = customDatePicker ? customDatePicker.value : '';
+            return orderInfo.fullStr === selectedDateStr;
         } else if (filterValue === 'week') {
             const sevenDaysAgo = new Date(todayObj);
             sevenDaysAgo.setDate(todayObj.getDate() - 7);
@@ -1766,6 +1796,16 @@ function renderAdminDashboard() {
         return true;
     });
 
+    // تحديث نص التاريخ المعروض فوق الكروت
+    if (summaryText) {
+        if (filterValue === 'custom' && customDatePicker && customDatePicker.value) {
+            const selectedObj = new Date(customDatePicker.value + 'T00:00:00');
+            summaryText.innerText = `تاريخ العرض: ${getFormattedArabicDate(selectedObj).displayStr}`;
+        } else {
+            summaryText.innerText = `التاريخ الحالي: ${todayInfo.displayStr}`;
+        }
+    }
+
     if (document.getElementById('stat-total')) document.getElementById('stat-total').innerText = filteredOrders.length;
     if (document.getElementById('stat-revenue')) {
         const totalSales = filteredOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
@@ -1777,7 +1817,7 @@ function renderAdminDashboard() {
     if (document.getElementById('stat-done')) document.getElementById('stat-done').innerText = filteredOrders.filter(o => o.status === 'DELIVERED').length;
 
     if (filteredOrders.length === 0) {
-        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها حالياً لهذا التاريخ</p>`;
+        container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد طلبات لعرضها لهذا التاريخ المحدد</p>`;
         return;
     }
 
@@ -1823,7 +1863,7 @@ function renderAdminDashboard() {
 
             <div class="flex justify-between items-center my-3 pt-2 border-t text-base font-black text-gray-900">
                 <span>الإجمالي:</span>
-                <span class="text-red-700 text-lg">${order.total} ج.م</span>
+                <span>${order.total} ج.م</span>
             </div>
 
             <div class="space-y-2 pt-2">
