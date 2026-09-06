@@ -243,6 +243,68 @@ width: 100% !important;
 .cart-shake {
     animation: cartShake 0.4s ease-in-out;
 }
+/* =========================================================
+   نظام الثيمات المتكامل (Full Light/Dark Theme Engine)
+   ========================================================= */
+
+/* 1. الثيم النهاري الشامل (Light Mode) */
+body.light-theme {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+/* تعديل الهيدر وشريط الإعلانات في النهاري */
+body.light-theme header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+
+body.light-theme header h1, 
+body.light-theme header nav button, 
+body.light-theme header nav a {
+    color: #58081A !important;
+}
+
+/* تعديل كروت العروض والمنيو والسكاشن */
+body.light-theme #offers-section,
+body.light-theme #menu-section,
+body.light-theme section {
+    background-color: #f1f5f9 !important;
+}
+
+body.light-theme .food-card-3d,
+body.light-theme #offers-container > div,
+body.light-theme #menu-grid > div {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* تحويل ألوان الخطوط داخل الكروت لتكون داكنة وواضحة جداً */
+body.light-theme .food-card-3d h4,
+body.light-theme #offers-container h4,
+body.light-theme #menu-grid h4 {
+    color: #58081A !important;
+}
+
+body.light-theme .food-card-3d p,
+body.light-theme #offers-container p,
+body.light-theme #menu-grid p,
+body.light-theme section h3,
+body.light-theme section p {
+    color: #334155 !important;
+}
+
+body.light-theme .card-size-btn {
+    border-color: #94a3b8 !important;
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+}
+
+body.light-theme .card-size-btn[class*="bg-brand-gold"] {
+    background-color: #D4AF37 !important;
+    color: #58081A !important;
+}
 </style>
 </head>
 <body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
@@ -308,35 +370,35 @@ width: 100% !important;
 
     <!-- Main Content -->
     <main id="main-content" class="flex-grow">
-        <!-- Hero Section -->
-        <section class="relative bg-gradient-to-b from-brand-dark to-brand-light text-white py-16 md:py-24 overflow-hidden">
-            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:16px_16px]"></div>
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid md:grid-cols-2 gap-12 items-center">
-                <div class="space-y-6 text-center md:text-right">
-                    <span class="inline-block bg-brand-gold/20 text-brand-gold font-extrabold text-sm px-4 py-1.5 rounded-full border border-brand-gold/30">
-                        🔥 عجيبه الراعي الرسمي للسعادة
-                    </span>
-                    <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
-                        جوعان؟ <span class="text-brand-gold">عجيبه</span> عندها الحل 😋
-                    </h2>
-                    <p class="text-gray-200 text-lg md:text-xl font-medium max-w-xl">
-                        أشهى البيتزات، الكريب، الصواريخ، القنبلة والوافل... اطلب دلوقتي أونلاين بضغطة واحدة وسيب الباقي علينا!
-                    </p>
-                    <div class="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
-                        <a href="#menu-section" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-black px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 text-lg">
-                            اطلب الآن 🛒
-                        </a>
-                        <a href="#menu-section" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold px-8 py-4 rounded-xl transition-all text-lg backdrop-blur-sm">
-                            شوف المنيو
-                        </a>
-                    </div>
-                </div>
-                <div class="relative flex justify-center">
-                    <div class="w-72 h-72 sm:w-96 sm:h-96 bg-brand-gold/20 absolute -inset-4 blur-2xl rounded-full"></div>
-<img src="agiba.png" alt="مطعم عجيبه" class="relative z-10 rounded-2xl shadow-2xl object-cover w-full h-80 sm:h-96 border-4 border-white/20 welcome-bounce transform hover:scale-[1.02] transition-transform duration-300">                
-                </div>
+<!-- Hero Section مع خلفية واجهة عجيبة وصورة الوجبة التفاعلية -->
+<section id="hero-bg-section" class="relative text-white py-16 md:py-24 overflow-hidden bg-cover bg-center transition-all duration-500" style="background-image: linear-gradient(to bottom, rgba(88, 8, 26, 0.88), rgba(13, 15, 18, 0.95)), url('agiba.png');">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid md:grid-cols-2 gap-12 items-center">
+        <div class="space-y-6 text-center md:text-right">
+            <span class="inline-block bg-brand-gold/20 text-brand-gold font-extrabold text-sm px-4 py-1.5 rounded-full border border-brand-gold/30">
+                🔥 عجيبه الراعي الرسمي للسعادة
+            </span>
+            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
+                جوعان؟ <span class="text-brand-gold">عجيبه</span> عندها الحل 😋
+            </h2>
+            <p class="text-gray-200 text-lg md:text-xl font-medium max-w-xl">
+                أشهى البيتزات، الكريب، الصواريخ، القنبلة والوافل... اطلب دلوقتي أونلاين بضغطة واحدة وسيب الباقي علينا!
+            </p>
+            <div class="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
+                <a href="#menu-section" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-black px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 text-lg">
+                    اطلب الآن 🛒
+                </a>
+                <a href="#menu-section" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold px-8 py-4 rounded-xl transition-all text-lg backdrop-blur-sm">
+                    شوف المنيو
+                </a>
             </div>
-        </section>
+        </div>
+        <div class="relative flex justify-center">
+            <div class="w-72 h-72 sm:w-96 sm:h-96 bg-brand-gold/20 absolute -inset-4 blur-2xl rounded-full"></div>
+            <!-- صورة الوجبات التفاعلية الجديدة بدلاً من واجهة المحل -->
+            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80" alt="أشهى وجبات عجيبة" class="relative z-10 rounded-2xl shadow-2xl object-cover w-full h-80 sm:h-96 border-4 border-white/20 welcome-bounce transform hover:scale-[1.02] transition-transform duration-300">
+        </div>
+    </div>
+</section>
 
         <!-- Category Bar -->
         <section class="py-10 bg-white border-b border-gray-100">
@@ -2382,15 +2444,22 @@ function processOrderSuccess() {
 function toggleDarkMode() {
     const isLight = document.body.classList.toggle('light-theme');
     const icon = document.getElementById('theme-icon');
+    const heroSection = document.getElementById('hero-bg-section');
     
     if (isLight) {
-        document.body.style.backgroundColor = "#ffffff";
-        document.body.style.color = "#111827";
         if (icon) icon.className = "fa-solid fa-sun text-lg text-amber-500";
+        if (heroSection) {
+            heroSection.style.backgroundImage = "linear-gradient(to bottom, rgba(241, 245, 249, 0.92), rgba(226, 232, 240, 0.96)), url('agiba.png')";
+            heroSection.classList.remove('text-white');
+            heroSection.classList.add('text-slate-900');
+        }
     } else {
-        document.body.style.backgroundColor = "#0d0f12";
-        document.body.style.color = "#ffffff";
         if (icon) icon.className = "fa-solid fa-moon text-lg text-amber-400";
+        if (heroSection) {
+            heroSection.style.backgroundImage = "linear-gradient(to bottom, rgba(88, 8, 26, 0.88), rgba(13, 15, 18, 0.95)), url('agiba.png')";
+            heroSection.classList.remove('text-slate-900');
+            heroSection.classList.add('text-white');
+        }
     }
 }
     </script>
