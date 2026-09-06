@@ -1014,22 +1014,21 @@ const REAL_AGEEBA_MENU = [
         let adminActiveCategory = 'الكل';
         let currentEditingItem = null;
 
-        window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
             // Force replace storage with actual official menu data
             localStorage.setItem('ageeba_real_menu', JSON.stringify(REAL_AGEEBA_MENU));
             menuItems = REAL_AGEEBA_MENU;
             
-            renderCategories();
             renderOffers();
             renderMenuTabs();
             renderMenu();
             loadSavedCustomerInfo();
             updateCartBadge();
             // فحص ما إذا كان الكاشير داخل اللوحة قبل التحديث
-    if (localStorage.getItem('ageeba_admin_logged_in') === 'true') {
-        document.getElementById('admin-dashboard-modal').classList.remove('hidden');
-        renderAdminDashboard();
-    }
+            if (localStorage.getItem('ageeba_admin_logged_in') === 'true') {
+                document.getElementById('admin-dashboard-modal').classList.remove('hidden');
+                renderAdminDashboard();
+            }
         });
 
         function saveMenuState() {
@@ -1218,11 +1217,12 @@ ${(item.sizes && item.sizes.length > 1) ? `
 
             <div class="pt-4 mt-3 border-t border-amber-500/10 flex items-center justify-between">
                 <span id="card-price-${item.id}" class="text-xl font-black text-amber-400">${initialPrice} ج.م</span>
-                ${item.available ? `
+${item.available ? `
                     <button onclick="openProductModal('${item.id}')" class="btn-gold-3d text-xs px-4 py-2.5 flex items-center gap-1.5">
                         <i class="fa-solid fa-cart-plus"></i> أضف للسلة
                     </button>
-                ` : `
+                ` : ` 
+                  
                     <button disabled class="bg-gray-800 text-gray-500 text-xs font-bold px-3 py-2 rounded-xl cursor-not-allowed">
                         غير متاح
                     </button>
@@ -1406,8 +1406,7 @@ function stopKitchenAlert() {
             document.getElementById('modal-qty').innerText = currentEditingItem.quantity;
             updateModalPriceDisplay();
         }
-
-        function confirmAddToCart() {
+function confirmAddToCart() {
             cart.push({
                 cartItemId: Date.now().toString(),
                 name: currentEditingItem.name,
@@ -1420,11 +1419,11 @@ function stopKitchenAlert() {
             saveCartState();
             closeProductModal();
 
-            // تأثير هزة السلة والتفاعل
+            // تأثير اهتزاز وتكبير زر شوكة والسكينة فوق بدون فتح السلة
             const cartBtn = document.getElementById('cart-badge')?.parentElement;
             if (cartBtn) {
                 cartBtn.classList.add('cart-shake');
-                setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
+                setTimeout(() => cartBtn.classList.remove('cart-shake'), 500);
             }
         }
 
