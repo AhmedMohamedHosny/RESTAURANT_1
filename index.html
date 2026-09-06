@@ -1383,7 +1383,7 @@ function proceedToReview() {
             document.getElementById('checkout-step-1').classList.remove('hidden');
         }
 
-// دالة التأكيد المباشر وتحويل الطلب لواتساب المطعم
+// دالة التأكيد المباشر وتحويل الطلب لواتساب المطعم بدون أخطاء
 function submitFinalOrder() {
     if (!pendingOrderData) return;
 
@@ -1394,18 +1394,18 @@ function submitFinalOrder() {
         return;
     }
 
-
-
-    // 3. الطلبات الكبيرة أكثر من 700 ج.م
+    // 2. الطلبات الكبيرة أكثر من 700 ج.م
     if (pendingOrderData.total > 700) {
         closeCheckoutModal();
         const msg = encodeURIComponent(`مرحباً مطعم عجيبه، أرغب بتأكيد طلبي بقيمة (${pendingOrderData.total} ج.م) ورقم الطلب (#${pendingOrderData.id}). سأقوم بإرفاق إيصال التحويل.`);
-        document.getElementById('whatsapp-pay-btn').href = `https://wa.me/201127166175?text=${msg}`;
-        document.getElementById('payment-modal').classList.remove('hidden');
+        const payBtn = document.getElementById('whatsapp-pay-btn');
+        if (payBtn) payBtn.href = `https://wa.me/201127166175?text=${msg}`;
+        const payModal = document.getElementById('payment-modal');
+        if (payModal) payModal.classList.remove('hidden');
         return;
     }
 
-    // 4. تجهيز نص الرسالة الشامل للواتساب
+    // 3. تجهيز نص الرسالة الشامل للواتساب
     let itemsText = pendingOrderData.items.map(i => `• ${i.name} (${i.selectedSize}) × ${i.quantity} = ${i.priceAtPurchase * i.quantity}ج`).join('%0A');
     
     let fullWhatsAppMessage = `*طلب جديد من مطعم عجيبه 🍔*%0A` +
@@ -1423,10 +1423,10 @@ function submitFinalOrder() {
         `*التوصيل:* ${pendingOrderData.deliveryFee} ج.م%0A` +
         `*الإجمالي النهائي:* ${pendingOrderData.total} ج.م`;
 
-    // 5. فتح الواتساب تلقائياً للعميل برقم المطعم
+    // 4. فتح الواتساب تلقائياً للعميل برقم المطعم
     window.open(`https://wa.me/201127166175?text=${fullWhatsAppMessage}`, '_blank');
 
-    // 6. إغلاق المودال وتسجيل الأوردر بالسيستم بنجاح
+    // 5. إغلاق المودال وتسجيل الأوردر بالسيستم بنجاح
     closeCheckoutModal();
     processOrderSuccess();
 }
@@ -2051,44 +2051,7 @@ function addToBlacklist(phone) {
     }
 }
 
-// 2. فحص محاولة الطلب وتطبيق القواعد (Rate Limiting + Blacklist + OTP + Limit > 700)
-function submitFinalOrder() {
-    if (!pendingOrderData) return;
 
-    // أ) فحص القائمة السوداء
-    const blacklist = getBlacklist();
-    if (blacklist.includes(pendingOrderData.phone)) {
-        alert("عذراً، يرجى الاتصال بالمطعم مباشرة هاتفياً لإتمام هذا الطلب.");
-        return;
-    }
-
-    // ب) فحص تقييد عدد الطلبات (Rate Limiting: طلبين كل 15 دقيقة)
-    const now = Date.now();
-    if (now - lastOrderTime < 15 * 60 * 1000) {
-        if (orderCountInWindow >= 2) {
-            alert("تم إرسال عدة طلبات مؤخراً. برجاء الانتظار قليلاً أو التواصل مع المطعم تلفونياً.");
-            return;
-        }
-    } else {
-        orderCountInWindow = 0; // إعادة تعيين النافذة الزمنية
-    }
-
-    // ج) إذا كان المبلغ أكبر من 700 ج.م - التوجه لمودال الدفع المسبق عبر المحافظ
-    if (pendingOrderData.total > 700) {
-        closeCheckoutModal();
-        const msg = encodeURIComponent(`مرحباً مطعم عجيبه، أرغب بتأكيد طلبي بقيمة (${pendingOrderData.total} ج.م) ورقم الطلب (#${pendingOrderData.id}). سأقوم بإرفاق إيصال التحويل.`);
-        document.getElementById('whatsapp-pay-btn').href = `https://wa.me/201127166175?text=${msg}`;
-        document.getElementById('payment-modal').classList.remove('hidden');
-        return;
-    }
-
-    // د) تفعيل كود الـ OTP
-    generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-    document.getElementById('demo-otp-code').innerText = generatedOTP;
-    document.getElementById('otp-input').value = '';
-    closeCheckoutModal();
-    document.getElementById('otp-modal').classList.remove('hidden');
-}
 
 
 // 4. إنهاء طلب الدفع الإلكتروني عبر الواتساب
