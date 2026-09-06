@@ -1437,25 +1437,48 @@ function confirmAddToCart() {
                 setTimeout(() => cartBtn.classList.remove('cart-shake'), 500);
             }
         }
-
-function addOfferToCart(title, price) {
-    cart.push({
-        cartItemId: Date.now().toString(),
-        name: title,
+function addOfferToCart(title, price, image) {
+    // فتح شاشة تحديد الكمية للعرض بنفس أسلوب أصناف المنيو
+    currentEditingItem = { 
+        id: 'offer-' + Date.now(),
+        name: title, 
+        description: 'عرض خاص مميز من مطعم عجيبة.',
         price: price,
-        selectedSize: "عرض خاص",
-        selectedExtras: [],
+        image: image || "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80",
+        selectedSize: "عرض خاص", 
+        selectedExtras: [], 
         quantity: 1,
-        image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80"
-    });
-    saveCartState();
+        currentUnitPrice: price 
+    };
 
-    // اهتزاز أيقونة السلة العلوية للتأكيد بدون فتح القائمة
-    const cartBtn = document.getElementById('cart-badge')?.parentElement;
-    if (cartBtn) {
-        cartBtn.classList.add('cart-shake');
-        setTimeout(() => cartBtn.classList.remove('cart-shake'), 500);
-    }
+    const modalContent = document.getElementById('modal-content');
+    modalContent.innerHTML = `
+        <img src="${currentEditingItem.image}" alt="${title}" class="w-full h-52 object-cover">
+        <div class="p-6 space-y-5">
+            <div>
+                <span class="bg-red-100 text-red-700 text-xs font-black px-2.5 py-1 rounded-md">عرض خاص</span>
+                <h3 class="text-2xl font-black text-gray-900 mt-2">${title}</h3>
+                <p class="text-sm text-gray-500 mt-1">${currentEditingItem.description}</p>
+            </div>
+
+            <div class="flex items-center justify-between border-t border-b py-3">
+                <span class="text-sm font-bold text-gray-700">حدد الكمية المطلوب طلبها:</span>
+                <div class="flex items-center gap-3 bg-gray-100 rounded-xl p-1">
+                    <button onclick="updateModalQty(-1)" class="w-8 h-8 bg-white rounded-lg font-bold text-gray-700 shadow-sm">-</button>
+                    <span id="modal-qty" class="font-black text-gray-900 text-base">1</span>
+                    <button onclick="updateModalQty(1)" class="w-8 h-8 bg-white rounded-lg font-bold text-gray-700 shadow-sm">+</button>
+                </div>
+            </div>
+
+            <button onclick="confirmAddToCart()" class="w-full bg-brand-dark hover:bg-brand-light text-white font-black py-3.5 rounded-xl shadow-lg transition-colors flex justify-between px-6">
+                <span>أضف للسلة 🛒</span>
+                <span id="modal-total-price">${price} ج.م</span>
+            </button>
+        </div>
+    `;
+
+    document.getElementById('product-modal').classList.remove('hidden');
+    updateModalPriceDisplay();
 }
 
         function toggleCartModal() {
