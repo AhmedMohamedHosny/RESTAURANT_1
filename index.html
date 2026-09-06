@@ -1635,14 +1635,12 @@ if (phone === phone2) {
 
     const combinedPhones = `${phone} / ${phone2}`;
 
-    pendingOrderData = {
 // حساب عدد طلبات اليوم لتوليد رقم تسلسلي بسيط مثل AG-1, AG-2
-const todayOrdersCount = orders.filter(o => o.createdAtDate === `${yyyy}-${mm}-${dd}`).length;
-const nextOrderNum = todayOrdersCount + 1;
+    const todayOrdersCount = orders.filter(o => o.createdAtDate === `${yyyy}-${mm}-${dd}`).length;
+    const nextOrderNum = todayOrdersCount + 1;
 
-pendingOrderData = {
-    id: 'AG-' + nextOrderNum,
-        
+    pendingOrderData = {
+        id: 'AG-' + nextOrderNum,
         customerName: name,
         phone: combinedPhones,
         type: type,
@@ -2140,25 +2138,6 @@ function renderKDS() {
     `).join('');
 }
 
-// 3. حسابات الطيارين ورسوم التوصيل
-function renderDriversAccount() {
-    const container = document.getElementById('drivers-list-container');
-    const outOrders = orders.filter(o => o.status === 'OUT_FOR_DELIVERY' || o.status === 'DELIVERED');
-    
-    container.innerHTML = `
-        <div class="bg-white p-4 rounded-xl border shadow-sm space-y-3 col-span-full">
-            <h4 class="font-bold text-gray-800">تعيين أوردر لطيار:</h4>
-            ${outOrders.map(o => `
-                <div class="flex items-center justify-between border-b pb-2 text-xs">
-                    <span>#${o.id} - ${o.customerName} (${o.total} ج.م)</span>
-                    <button onclick="assignDriver('${o.id}')" class="bg-brand-dark text-white font-bold px-3 py-1 rounded-lg">
-                        ${o.driver ? 'الطيار: ' + o.driver : '➕ تعيين طيار'}
-                    </button>
-                </div>
-            `).join('')}
-        </div>
-    `;
-}
 
 function assignDriver(orderId) {
     const driverName = prompt("أدخل اسم الطيار / المندوب:");
