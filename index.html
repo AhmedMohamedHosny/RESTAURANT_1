@@ -1686,7 +1686,7 @@ function submitFinalOrder() {
         return;
     }
 
-    // 2. إغلاق مودال مراجعة الطلب وحفظ البيانات في النظام فوراً
+    // 2. إغلاق مودال المراجعة وحفظ الطلب
     closeCheckoutModal();
     processOrderSuccess();
 }
@@ -1699,14 +1699,18 @@ function processOrderSuccess() {
     localStorage.setItem('ageeba_last_order_time', lastOrderTime.toString());
     localStorage.setItem('ageeba_order_count', orderCountInWindow.toString());
 
-    // 1. استرجاع الأوردرات الحالية وإضافة الجديد أول المصفوفة
+    // التأكد الصريح من أن حالة الطلب الجديد "NEW"
+    pendingOrderData.status = 'NEW';
+
+    // 1. استرجاع الأوردرات الحالية وإضافة الطلب الجديد في البداية
     let currentOrders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
     currentOrders.unshift(pendingOrderData);
     
-    // 2. مزامنة المتغير العام والمحلي
+    // 2. تحديث الـ LocalStorage والمتغير العام فوراً
     orders = currentOrders;
     localStorage.setItem('ageeba_orders', JSON.stringify(orders));
 
+    // 3. تفريغ السلة
     cart = [];
     saveCartState();
 
@@ -1720,7 +1724,7 @@ function processOrderSuccess() {
     document.getElementById('success-order-id').innerText = '#' + pendingOrderData.id;
     document.getElementById('success-modal').classList.remove('hidden');
 
-    // 3. إعادة رسم لوحة الكاشير فوراً
+    // 4. تحديث العدادات وتنبيه الطلب الجديد
     renderAdminDashboard();
     triggerNewOrderAlert();
 }
