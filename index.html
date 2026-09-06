@@ -2193,7 +2193,32 @@ function exportOrdersReportExcel() {
         });
     });
 
-    // 2. تجهيز شيت ملخص الطلبات (طلب واحد في كل سطر)
+    // 1.5 تجميع الأصناف المباعة (كام مرة اتباع كل صنف وإجمالي مبيعاته في الفترة)
+    const itemsAggregateMap = {};
+    reportOrders.forEach(order => {
+        if (order.status === 'CANCELLED') return; // تجاهل الطلبات الملغية من التجميع
+        const items = Array.isArray(order.items) ? order.items : [];
+        items.forEach(item => {
+            const key = `${item.name}||${item.selectedSize || 'عادي'}`;
+            if (!itemsAggregateMap[key]) {
+                itemsAggregateMap[key] = {
+                    'اسم الصنف': item.name,
+                    'الحجم': item.selectedSize || 'عادي',
+                    'عدد مرات الطلب (كأوردر)': 0,
+                    'إجمالي الكمية المباعة': 0,
+                    'إجمالي المبيعات (ج.م)': 0
+                };
+            }
+            itemsAggregateMap[key]['عدد مرات الطلب (كأوردر)'] += 1;
+            itemsAggregateMap[key]['إجمالي الكمية المباعة'] += Number(item.quantity || 0);
+            itemsAggregateMap[key]['إجمالي المبيعات (ج.م)'] += (Number(item.priceAtPurchase || 0) * Number(item.quantity || 0));
+        });
+    });
+    // ترتيب الأصناف تنازلياً حسب الأكثر مبيعاً
+    const itemsAggregateRows = Object.values(itemsAggregateMap).sort((a, b) => b['إجمالي الكمية المباعة'] - a['إجمالي الكمية المباعة']);
+
+    // 2. تجهيز شيت ملخص الطلبات (طلب واحد في كل سطر)   
+    
     const summaryRows = reportOrders.map(order => ({
         'رقم الطلب': order.id,
         'التاريخ': order.createdAtDate || '',
@@ -2227,6 +2252,9 @@ function exportOrdersReportExcel() {
 
     const wsTotals = XLSX.utils.json_to_sheet(totalsRows);
     XLSX.utils.book_append_sheet(wb, wsTotals, 'الملخص المالي');
+
+    const wsItemsAggregate = XLSX.utils.json_to_sheet(itemsAggregateRows);
+    XLSX.utils.book_append_sheet(wb, wsItemsAggregate, 'تجميع الأصناف المباعة');
 
     const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
     XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص الطلبات');
