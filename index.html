@@ -171,14 +171,6 @@ header {
     display: none;
 }
 
-@page {
-    size: auto;
-    margin: 0;
-}
-@page {
-    size: 80mm auto;
-    margin: 0;
-}
 @media print {
     @page {
         size: 80mm auto;
@@ -186,31 +178,31 @@ header {
     }
 
     body {
-        width: 80mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
         background: #fff !important;
+        color: #000 !important;
     }
 
     /* إخفاء كافة عناصر الموقع أثناء الطباعة */
-    body * {
-        visibility: hidden !important;
+    body > * {
+        display: none !important;
     }
 
-    /* إظهار الفاتورة فقط في المنتصف وبدون هامش أبيض ضخم */
-    #printable-receipt, #printable-receipt * {
-        visibility: visible !important;
-    }
-
+    /* إظهار الفاتورة فقط بطريقة نظيفة بدون إنسخاخ للصفحات */
     #printable-receipt {
-        position: absolute !important;
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;
         left: 0 !important;
         top: 0 !important;
-        width: 72mm !important; /* يناسب منطقة الطباعة الفعلية داخل رول 80mm */
-        padding: 4mm !important;
-        font-family: monospace, sans-serif !important;
-        color: #000 !important;
+        width: 80mm !important;
+        padding: 5mm !important;
         box-sizing: border-box !important;
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    #printable-receipt * {
+        visibility: visible !important;
     }
 }
     /* تأثير اهتزاز وتكبير زر السلة عند إضافة صنف */
@@ -1748,6 +1740,7 @@ function toggleCustomDateFilter() {
 }
 
 // دالة عرض اللوحة المحدثة لدعم الفلترة بتاريخ محدد
+// دالة عرض اللوحة المحدثة لدعم الفلترة بتاريخ محدد وتحديث النص الصحيح
 function renderAdminDashboard() {
     const orders = JSON.parse(localStorage.getItem('ageeba_orders') || '[]');
     const container = document.getElementById('admin-orders-list');
@@ -1796,13 +1789,19 @@ function renderAdminDashboard() {
         return true;
     });
 
-    // تحديث نص التاريخ المعروض فوق الكروت
+    // تحديث نص التاريخ المعروض بناءً على الفلتر المختار
     if (summaryText) {
-        if (filterValue === 'custom' && customDatePicker && customDatePicker.value) {
+        if (filterValue === 'today') {
+            summaryText.innerText = `التاريخ المعروض: ${todayInfo.displayStr}`;
+        } else if (filterValue === 'yesterday') {
+            const yesterdayObj = new Date(todayObj);
+            yesterdayObj.setDate(todayObj.getDate() - 1);
+            summaryText.innerText = `التاريخ المعروض: ${getFormattedArabicDate(yesterdayObj).displayStr}`;
+        } else if (filterValue === 'custom' && customDatePicker && customDatePicker.value) {
             const selectedObj = new Date(customDatePicker.value + 'T00:00:00');
-            summaryText.innerText = `تاريخ العرض: ${getFormattedArabicDate(selectedObj).displayStr}`;
+            summaryText.innerText = `التاريخ المعروض: ${getFormattedArabicDate(selectedObj).displayStr}`;
         } else {
-            summaryText.innerText = `التاريخ الحالي: ${todayInfo.displayStr}`;
+            summaryText.innerText = `عرض جميع المبيعات والطلبات`;
         }
     }
 
