@@ -345,6 +345,46 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
     font-weight: 900 !important;
     border: 1px solid #d1d5db !important;
 }
+
+/* =========================================================
+   الوضع الليلي الخاص بلوحة الكاشير (Admin Dashboard Dark Mode)
+   ========================================================= */
+#admin-dashboard-modal.admin-dark-theme {
+    background-color: #0f1115 !important;
+}
+#admin-dashboard-modal.admin-dark-theme .bg-white {
+    background-color: #1a1d23 !important;
+    border-color: #2d3138 !important;
+}
+#admin-dashboard-modal.admin-dark-theme .bg-gray-50 {
+    background-color: #14171c !important;
+}
+#admin-dashboard-modal.admin-dark-theme .bg-gray-100 {
+    background-color: #20242b !important;
+}
+#admin-dashboard-modal.admin-dark-theme .text-gray-800,
+#admin-dashboard-modal.admin-dark-theme .text-gray-900,
+#admin-dashboard-modal.admin-dark-theme .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+#admin-dashboard-modal.admin-dark-theme .text-gray-500,
+#admin-dashboard-modal.admin-dark-theme .text-gray-400 {
+    color: #94a3b8 !important;
+}
+#admin-dashboard-modal.admin-dark-theme .border-gray-200,
+#admin-dashboard-modal.admin-dark-theme .border-gray-300,
+#admin-dashboard-modal.admin-dark-theme .border {
+    border-color: #2d3138 !important;
+}
+#admin-dashboard-modal.admin-dark-theme select,
+#admin-dashboard-modal.admin-dark-theme input[type="date"] {
+    background-color: #1a1d23 !important;
+    color: #f1f5f9 !important;
+    border-color: #2d3138 !important;
+}
+#admin-dashboard-modal.admin-dark-theme .bg-amber-50 {
+    background-color: #2a2416 !important;
+}
     /* وضع الكاونتر: إظهار المنيو فقط */
 body.pos-mode-active > div:first-child { display: none !important; }
 body.pos-mode-active #main-content > section:not(#menu-section) { display: none !important; }
@@ -781,9 +821,14 @@ body.pos-mode-active footer { display: none !important; }
                 <span class="bg-brand-gold text-brand-dark font-black px-3 py-1 rounded-lg text-sm">لوحة الكاشير</span>
                 <h2 class="text-xl font-bold">مطعم عجيبه - البدرشين 👨‍🍳</h2>
             </div>
-            <button onclick="closeAdminDashboard()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
-                خروج من اللوحة
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleAdminDarkMode()" class="p-2.5 rounded-full text-amber-300 hover:bg-white/10 transition-colors" title="تغيير الوضع الليلي/النهاري">
+                    <i id="admin-theme-icon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+                <button onclick="closeAdminDashboard()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+                    خروج من اللوحة
+                </button>
+            </div>
         </div>
 
         <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
@@ -1144,6 +1189,7 @@ window.addEventListener('DOMContentLoaded', () => {
             } else if (localStorage.getItem('ageeba_admin_logged_in') === 'true') {
                 document.getElementById('admin-dashboard-modal').classList.remove('hidden');
                 renderAdminDashboard();
+                applyAdminSavedTheme();
             }
     
         });
@@ -2418,10 +2464,12 @@ function openAdminAuth() {
         localStorage.setItem('ageeba_admin_logged_in', 'true'); // حفظ حالة تسجيل الدخول
         document.getElementById('admin-dashboard-modal').classList.remove('hidden');
         renderAdminDashboard();
+        applyAdminSavedTheme();
     } else if (pwd !== null) {
         alert("كلمة المرور غير صحيحة!");
     }
 }
+        
 function getFormattedArabicDate(dateObj) {
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
     const dayName = days[dateObj.getDay()];
@@ -2975,6 +3023,30 @@ function toggleDarkMode() {
         if (icon) icon.className = "fa-solid fa-moon text-lg text-amber-400";
     }
 }
+
+// وضع ليلي/نهاري خاص بلوحة الكاشير (منفصل عن وضع الموقع العادي)
+function toggleAdminDarkMode() {
+    const modal = document.getElementById('admin-dashboard-modal');
+    const icon = document.getElementById('admin-theme-icon');
+    const isDark = modal.classList.toggle('admin-dark-theme');
+
+    localStorage.setItem('ageeba_admin_dark_mode', isDark ? 'true' : 'false');
+
+    if (icon) {
+        icon.className = isDark ? "fa-solid fa-sun text-lg text-amber-300" : "fa-solid fa-moon text-lg text-amber-300";
+    }
+}
+        // تطبيق آخر اختيار محفوظ للوضع الليلي عند فتح اللوحة
+function applyAdminSavedTheme() {
+    const modal = document.getElementById('admin-dashboard-modal');
+    const icon = document.getElementById('admin-theme-icon');
+    const isDarkSaved = localStorage.getItem('ageeba_admin_dark_mode') === 'true';
+    if (isDarkSaved) {
+        modal.classList.add('admin-dark-theme');
+        if (icon) icon.className = "fa-solid fa-sun text-lg text-amber-300";
+    }
+}
+        
 // روابط صور تعمل بشكل مباشر ومعالجة الانقلاب والتكبير الـ 3D
 const offerImages = [
     'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80',
