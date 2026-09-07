@@ -389,11 +389,93 @@ body.light-theme .card-size-btn[class*="bg-brand-gold"] {
 body.pos-mode-active > div:first-child { display: none !important; }
 body.pos-mode-active #main-content > section:not(#menu-section) { display: none !important; }
 body.pos-mode-active footer { display: none !important; }
+
+/* =========================================================
+   شاشة إغلاق المطعم الكاملة (Store Closed Overlay) - تصميم 3D فاخر
+   ========================================================= */
+#store-closed-overlay .store-closed-bg {
+    background: radial-gradient(circle at 50% 20%, rgba(212,175,55,0.15) 0%, transparent 55%),
+                linear-gradient(160deg, #2b0410 0%, #58081A 35%, #1a0308 100%);
+}
+#store-closed-overlay .store-closed-particles {
+    background-image: radial-gradient(rgba(212,175,55,0.35) 1px, transparent 1px);
+    background-size: 28px 28px;
+    animation: storeClosedParticlesMove 12s linear infinite;
+    opacity: 0.35;
+}
+@keyframes storeClosedParticlesMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 280px; }
+}
+.store-closed-logo-wrap {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto;
+    perspective: 800px;
+}
+.store-closed-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 9999px;
+    border: 3px solid #D4AF37;
+    box-shadow: 0 0 35px rgba(212,175,55,0.6), 0 15px 30px rgba(0,0,0,0.5);
+    animation: storeClosedLogoSpin 6s ease-in-out infinite;
+    background: #0d0f12;
+    padding: 10px;
+}
+@keyframes storeClosedLogoSpin {
+    0%   { transform: rotateY(0deg) translateY(0px); }
+    25%  { transform: rotateY(180deg) translateY(-10px); }
+    50%  { transform: rotateY(360deg) translateY(0px); }
+    75%  { transform: rotateY(180deg) translateY(-10px); }
+    100% { transform: rotateY(360deg) translateY(0px); }
+}
+.store-closed-glow-text {
+    text-shadow: 0 0 20px rgba(251,191,36,0.6), 0 0 40px rgba(251,191,36,0.3);
+    animation: storeClosedTextPulse 2.5s ease-in-out infinite alternate;
+}
+@keyframes storeClosedTextPulse {
+    0% { opacity: 0.85; }
+    100% { opacity: 1; }
+}
+.store-closed-time-card {
+    animation: storeClosedCardFloat 3s ease-in-out infinite;
+}
+@keyframes storeClosedCardFloat {
+    0%, 100% { transform: translateY(0px) rotateX(0deg); }
+    50% { transform: translateY(-6px) rotateX(3deg); }
+}
 </style>
+
+
+    
 </head>
 <body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
 
+    <!-- شاشة إغلاق المطعم بالكامل (تمنع أي تفاعل مع الموقع أثناء الإغلاق) -->
+    <div id="store-closed-overlay" class="hidden fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center p-6" style="perspective: 1200px;">
+        <div class="absolute inset-0 store-closed-bg"></div>
+        <div class="absolute inset-0 store-closed-particles"></div>
+        <div class="relative z-10 text-center space-y-6 max-w-lg mx-auto">
+            <div class="store-closed-logo-wrap">
+                <img src="logo.png" alt="عجيبه" class="store-closed-logo">
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black text-amber-300 store-closed-glow-text">عجيبه مقفولة دلوقتي 🌙</h2>
+            <p class="text-gray-200 text-base sm:text-lg leading-relaxed font-medium">
+                نعتذر، المطعم مغلق حالياً للراحة والتجهيز لأشهى الوجبات.<br>
+                اللهم صل وسلم على سيدنا محمد ﷺ 🤍
+            </p>
+            <div class="bg-white/10 border border-amber-400/30 backdrop-blur-md rounded-2xl px-6 py-4 inline-block store-closed-time-card">
+                <span class="text-xs text-amber-200 font-bold block mb-1">هنكون معاكم تاني الساعة</span>
+                <span id="store-reopen-time-display" class="text-2xl font-black text-white tracking-wider">--:--</span>
+            </div>
+            <p class="text-amber-200/80 text-sm font-bold pt-2">تابعونا وابقوا جاهزين... جوعكم قرب يخلص 😋</p>
+        </div>
+    </div>
+
     <!-- Top Announcement Bar -->
+    
 <div class="bg-brand-dark text-white text-sm md:text-base py-2 px-4 border-b border-brand-gold/20 font-black overflow-hidden">
 <marquee direction="right" scrollamount="10" dir="ltr" class="tracking-wide">    
         🚚 عجيبه الراعي الرسمي للسعادة | اطلب أونلاين بسهولة واستمتع بأشهى الوجبات | توصيل سريع لجميع المناطق &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🚚 عجيبه الراعي الرسمي للسعادة | اطلب أونلاين بسهولة واستمتع بأشهى الوجبات | توصيل سريع لجميع المناطق
@@ -877,6 +959,12 @@ body.pos-mode-active footer { display: none !important; }
                 <button id="admin-tab-blacklist" onclick="switchAdminSubTab('blacklist')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🚫 القائمة السوداء (المحظورين)
                 </button>
+                <button id="admin-tab-status" onclick="switchAdminSubTab('status')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+                    🕐 حالة المحل
+                </button>
+                <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
+
+                
                 <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
                     <span>➕</span>
                     <span>طلب كاونتر جديد</span>
@@ -928,6 +1016,9 @@ body.pos-mode-active footer { display: none !important; }
     </div>
     <div id="blacklist-items-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 </div>
+
+<!-- قسم التحكم في حالة فتح/غلق الموقع للعملاء -->
+<div id="admin-view-status" class="hidden"></div>
 
 
 
@@ -1168,6 +1259,7 @@ const REAL_AGEEBA_MENU = [
         let activeCategory = 'الكل';
         let adminActiveCategory = 'الكل';
         let currentEditingItem = null;
+        let restaurantStatusData = null; // حالة فتح/غلق المحل القادمة من Firebase
 
 window.addEventListener('DOMContentLoaded', () => {
             // Force replace storage with actual official menu data
@@ -1191,7 +1283,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 renderAdminDashboard();
                 applyAdminSavedTheme();
             }
-    
+
+            checkAndApplyRestaurantStatus();
         });
 
         function saveMenuState() {
@@ -2465,6 +2558,7 @@ function openAdminAuth() {
         document.getElementById('admin-dashboard-modal').classList.remove('hidden');
         renderAdminDashboard();
         applyAdminSavedTheme();
+        checkAndApplyRestaurantStatus();
     } else if (pwd !== null) {
         alert("كلمة المرور غير صحيحة!");
     }
@@ -2490,10 +2584,11 @@ function getFormattedArabicDate(dateObj) {
 function closeAdminDashboard() {
     localStorage.removeItem('ageeba_admin_logged_in'); // مسح حالة تسجيل الدخول عند الخروج
     document.getElementById('admin-dashboard-modal').classList.add('hidden');
+    checkAndApplyRestaurantStatus();
 }
 
 function switchAdminSubTab(tab) {
-    const tabs = ['orders', 'menu', 'blacklist'];
+    const tabs = ['orders', 'menu', 'blacklist', 'status'];
     tabs.forEach(t => {
         const btn = document.getElementById(`admin-tab-${t}`);
         const view = document.getElementById(`admin-view-${t}`);
@@ -2503,6 +2598,160 @@ function switchAdminSubTab(tab) {
 
     if (tab === 'menu') renderAdminMenuManagement();
     if (tab === 'blacklist') renderBlacklistManagement();
+    if (tab === 'status') renderStoreStatusManagement();
+}
+
+// ===================== نظام التحكم في حالة فتح/غلق الموقع =====================
+
+// حساب الحالة الفعلية للموقع الآن (يدوي له الأولوية، وإلا يُحسب تلقائياً من الوقت)
+function getEffectiveStoreStatus() {
+    const data = restaurantStatusData || {};
+    const autoCloseTime = data.autoCloseTime || '05:00';
+    const autoOpenTime = data.autoOpenTime || '10:00';
+
+    if (data.manualOverride === 'CLOSED') {
+        return { isOpen: false, reopenTimeDisplay: autoOpenTime };
+    }
+    if (data.manualOverride === 'OPEN') {
+        return { isOpen: true, reopenTimeDisplay: null };
+    }
+
+    const now = new Date();
+    const nowStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+    let isClosed;
+    if (autoCloseTime <= autoOpenTime) {
+        isClosed = (nowStr >= autoCloseTime && nowStr < autoOpenTime);
+    } else {
+        isClosed = (nowStr >= autoCloseTime || nowStr < autoOpenTime);
+    }
+
+    return { isOpen: !isClosed, reopenTimeDisplay: autoOpenTime };
+}
+
+// تحويل الوقت لصيغة عربية سهلة (مثال: 10:00 -> 10:00 ص)
+function formatTimeToArabic12h(timeStr) {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    const period = h >= 12 ? 'م' : 'ص';
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+// إظهار أو إخفاء شاشة الإغلاق للعميل حسب الحالة الحالية
+function checkAndApplyRestaurantStatus() {
+    const overlay = document.getElementById('store-closed-overlay');
+    if (!overlay) return;
+
+    const isAdminOpen = !document.getElementById('admin-dashboard-modal')?.classList.contains('hidden');
+    const isPosMode = document.body.classList.contains('pos-mode-active');
+
+    const status = getEffectiveStoreStatus();
+
+    if (!status.isOpen && !isAdminOpen && !isPosMode) {
+        overlay.classList.remove('hidden');
+        const timeDisplay = document.getElementById('store-reopen-time-display');
+        if (timeDisplay) timeDisplay.innerText = formatTimeToArabic12h(status.reopenTimeDisplay);
+    } else {
+        overlay.classList.add('hidden');
+    }
+}
+
+// عرض واجهة تحكم الكاشير في حالة المحل
+function renderStoreStatusManagement() {
+    const container = document.getElementById('admin-view-status');
+    if (!container) return;
+
+    const data = restaurantStatusData || {};
+    const autoCloseTime = data.autoCloseTime || '05:00';
+    const autoOpenTime = data.autoOpenTime || '10:00';
+    const manualOverride = data.manualOverride || null;
+
+    const status = getEffectiveStoreStatus();
+    const currentStatusBadge = status.isOpen
+        ? `<span class="bg-green-100 text-green-700 border border-green-300 font-black px-4 py-2 rounded-xl text-sm">🟢 الموقع مفتوح للعملاء دلوقتي</span>`
+        : `<span class="bg-red-100 text-red-700 border border-red-300 font-black px-4 py-2 rounded-xl text-sm">🔴 الموقع مقفول للعملاء دلوقتي</span>`;
+
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6 max-w-2xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+                <h3 class="text-xl font-bold text-gray-800">🕐 التحكم في حالة فتح/غلق الموقع</h3>
+                ${currentStatusBadge}
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="font-bold text-gray-700 text-sm">⚡ تحكم فوري (يتخطى المواعيد التلقائية تحت)</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button onclick="closeStoreManually()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm shadow-sm">
+                        🔒 إغلاق الموقع فوراً
+                    </button>
+                    <button onclick="openStoreManually()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-sm shadow-sm">
+                        🔓 فتح الموقع فوراً
+                    </button>
+                    <button onclick="clearManualOverride()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl text-sm shadow-sm">
+                        ↩️ رجوع للمواعيد التلقائية
+                    </button>
+                </div>
+                ${manualOverride ? `<p class="text-xs font-bold ${manualOverride === 'CLOSED' ? 'text-red-600' : 'text-green-600'}">⚠️ التحكم اليدوي مفعّل حالياً (${manualOverride === 'CLOSED' ? 'إغلاق يدوي' : 'فتح يدوي'}) وهو متجاهل للمواعيد التلقائية تحت.</p>` : ''}
+            </div>
+
+            <div class="space-y-3 border-t pt-5">
+                <h4 class="font-bold text-gray-700 text-sm">⏰ المواعيد التلقائية اليومية (تعمل فقط لو مفيش تحكم يدوي مفعّل)</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">معاد إغلاق الموقع تلقائياً</label>
+                        <input type="time" id="auto-close-time-input" value="${autoCloseTime}" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">معاد فتح الموقع تلقائياً</label>
+                        <input type="time" id="auto-open-time-input" value="${autoOpenTime}" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-800">
+                    </div>
+                </div>
+                <button onclick="saveAutoScheduleTimes()" class="bg-brand-dark hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-sm">
+                    💾 حفظ المواعيد التلقائية
+                </button>
+                <p class="text-[11px] text-gray-500 font-bold">مثال: لو حددت الإغلاق الساعة 05:00 والفتح الساعة 10:00، هيظهر للعميل شاشة الإغلاق تلقائياً بين الساعتين دول كل يوم.</p>
+            </div>
+        </div>
+    `;
+}
+
+function saveAutoScheduleTimes() {
+    const closeTime = document.getElementById('auto-close-time-input').value;
+    const openTime = document.getElementById('auto-open-time-input').value;
+    if (!closeTime || !openTime) {
+        alert('يرجى تحديد الموعدين!');
+        return;
+    }
+    database.ref('restaurantStatus').update({
+        autoCloseTime: closeTime,
+        autoOpenTime: openTime
+    }).then(() => {
+        alert('تم حفظ المواعيد التلقائية بنجاح ✅');
+    }).catch(err => {
+        alert('حدث خطأ أثناء الحفظ، حاول مرة أخرى.');
+        console.error(err);
+    });
+}
+
+function closeStoreManually() {
+    if (!confirm('هل أنت متأكد من إغلاق الموقع فوراً أمام العملاء؟')) return;
+    database.ref('restaurantStatus').update({ manualOverride: 'CLOSED' }).then(() => {
+        renderStoreStatusManagement();
+    });
+}
+
+function openStoreManually() {
+    database.ref('restaurantStatus').update({ manualOverride: 'OPEN' }).then(() => {
+        renderStoreStatusManagement();
+    });
+}
+
+function clearManualOverride() {
+    database.ref('restaurantStatus').update({ manualOverride: null }).then(() => {
+        renderStoreStatusManagement();
+    });
 }
 
 // عرض الطيارين وتوضيح تفاصيل كل أوردر بالكامل
@@ -2910,9 +3159,19 @@ if (!firebase.apps.length) {
 }
 const database = firebase.database();
 
+// الاستماع اللحظي لحالة فتح/غلق الموقع (يشتغل على كل الأجهزة فوراً)
+database.ref('restaurantStatus').on('value', (snapshot) => {
+    restaurantStatusData = snapshot.val() || {};
+    checkAndApplyRestaurantStatus();
+    if (document.getElementById('admin-view-status')) renderStoreStatusManagement();
+});
+setInterval(checkAndApplyRestaurantStatus, 30000); // إعادة فحص كل 30 ثانية لتغطية المواعيد التلقائية
+
 // الاستماع المباشر واللحظي للطلبات
 let isFirstLoad = true;
 database.ref('orders').on('value', (snapshot) => {
+
+    
     const data = snapshot.val();
     orders = data ? Object.values(data) : [];
 
