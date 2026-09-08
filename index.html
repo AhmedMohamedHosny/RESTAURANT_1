@@ -877,7 +877,58 @@ body.pos-mode-active footer { display: none !important; }
             </div>
         </div>
     </div>
-
+<!-- PRODUCT FORM MODAL (إضافة / تعديل وجبة بالمنيو) -->
+    <div id="menu-item-form-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl relative">
+            <div class="p-5 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 id="product-form-title" class="text-lg font-black text-brand-dark">إضافة وجبة جديدة للمنيو</h3>
+                <button onclick="closeProductFormModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">اسم الوجبة *</label>
+                    <input type="text" id="pform-name" placeholder="مثال: كريب سوبر كرانشي" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">القسم *</label>
+                        <select id="pform-category" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-bold bg-white focus:border-brand-dark focus:outline-none">
+                            <option value="كريب">كريب</option>
+                            <option value="كريب VIP">كريب VIP</option>
+                            <option value="بيتزا">بيتزا</option>
+                            <option value="القنبلة">القنبلة</option>
+                            <option value="صواريخ">صواريخ</option>
+                            <option value="ساندوتشات">ساندوتشات</option>
+                            <option value="وافل">وافل</option>
+                            <option value="كريب الحلو">كريب الحلو</option>
+                            <option value="مقبلات">مقبلات</option>
+                            <option value="مشروبات">مشروبات</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">السعر (ج.م) *</label>
+                        <input type="number" id="pform-price" placeholder="مثلاً 85" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">وصف المكونات (اختياري)</label>
+                    <textarea id="pform-desc" rows="2" placeholder="وصف خلطة الوجبة ومكوناتها..." class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:border-brand-dark focus:outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">صورة الوجبة (من جهازك أو الكاميرا)</label>
+                    <input type="file" accept="image/*" id="pform-file" onchange="handleProductFormImageSelected(event)" class="w-full text-xs font-bold text-gray-600 file:ml-3 file:bg-brand-dark file:text-white file:border-0 file:rounded-lg file:px-4 file:py-2 file:font-bold file:cursor-pointer">
+                    <div class="mt-3 flex items-center gap-3">
+                        <img id="pform-img-preview" class="hidden w-20 h-20 rounded-xl object-cover border border-gray-300">
+                        <button type="button" id="pform-img-remove" onclick="removeProductFormImage()" class="hidden text-xs font-bold text-red-600 hover:underline">إزالة الصورة</button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t flex gap-3 sticky bottom-0 bg-white">
+                <button onclick="closeProductFormModal()" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl text-sm">إلغاء</button>
+                <button onclick="saveProductForm()" class="w-2/3 bg-emerald-700 hover:bg-emerald-800 text-white font-black py-3 rounded-xl text-sm shadow-md">💾 حفظ الوجبة</button>
+            </div>
+        </div>
+    </div>
     <!-- RESTAURANT DASHBOARD (ADMIN PANEL) -->
     <div id="admin-dashboard-modal" class="fixed inset-0 bg-gray-100 z-50 hidden overflow-y-auto">
         <div class="bg-brand-dark text-white px-6 py-4 flex justify-between items-center shadow-md">
@@ -3911,24 +3962,21 @@ function dismissBanner() {
 function renderAdminMenuManagement() {
     const container = document.getElementById('admin-view-menu');
     
-    // 1. تصفية المنتجات حسب القسم المختار في لوحة التحكم
     const filteredItems = adminActiveCategory === 'الكل' 
         ? menuItems 
         : menuItems.filter(item => item.category === adminActiveCategory);
 
-    // 2. بناء الهيكل الكامل مع تبويبات الأقسام
     container.innerHTML = `
         <div class="flex flex-wrap justify-between items-center gap-4 border-b border-gray-200 pb-4">
             <div>
                 <h3 class="text-xl font-bold text-gray-800">إدارة الوجبات والأسعار والتوفر</h3>
-                <p class="text-xs text-gray-500">اختر القسم لتعديل أسعار الوجبات أو إخفائها من المنيو</p>
+                <p class="text-xs text-gray-500">عدّل بيانات وصور الوجبات أو أضف وجبة جديدة بصورة من هاتفك</p>
             </div>
-            <button onclick="promptAddNewProduct()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-colors flex items-center gap-2">
-                <span>+ إضافة صنف جديد</span>
+            <button onclick="openProductFormModal()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md transition-colors flex items-center gap-2">
+                <span>➕ إضافة وجبة جديدة</span>
             </button>
         </div>
 
-        <!-- أزرار الأقسام (Category Tabs) -->
         <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
             ${CATEGORIES.map(cat => `
                 <button onclick="filterAdminCategory('${cat.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${adminActiveCategory === cat.id ? 'bg-brand-dark text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}">
@@ -3937,7 +3985,6 @@ function renderAdminMenuManagement() {
             `).join('')}
         </div>
 
-        <!-- كروت الأصناف -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
             ${filteredItems.length === 0 ? `
                 <div class="col-span-full text-center py-8 text-gray-400 font-bold text-sm">لا توجد أصناف في هذا القسم.</div>
@@ -3951,7 +3998,7 @@ function renderAdminMenuManagement() {
                             <div class="flex items-center gap-1">
                                 <span class="text-xs font-bold text-gray-500">السعر:</span>
                                 <span class="text-sm font-black text-brand-dark">${item.price} ج.م</span>
-                                <button onclick="editItemPrice('${item.id}')" class="text-xs text-blue-600 hover:underline font-bold mr-2">✏️ تعديل</button>
+                                <button onclick="openProductFormModal('${item.id}')" class="text-xs text-blue-600 hover:underline font-bold mr-2">✏️ تعديل كامل</button>
                             </div>
                         </div>
                     </div>
@@ -4175,29 +4222,156 @@ function editItemPrice(itemId) {
             }
         }
 
-        function promptAddNewProduct() {
-            const name = prompt("اسم الوجبة الجديد:");
-            if (!name) return;
-            const price = parseFloat(prompt("السعر بالجنيه:") || "0");
-            const category = prompt("الفئة (كريب/كريب VIP/بيتزا/القنبلة/صواريخ/ساندوتشات/وافل/كريب الحلو/مقبلات/مشروبات):", "كريب");
+// ===================== تحكم نافذة إضافة وتعديل الوجبات =====================
+let currentProductEditingId = null;
+let currentProductImageData = null;
 
-            const newItem = {
-                id: 'm' + Date.now(),
-                name: name,
-                category: category || "كريب",
-                price: price || 50,
-                image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80",
-                description: "وجبة جديدة طازجة من مطعم عجيبه.",
-                available: true,
-                sizes: ["عادي"],
-                extras: []
-            };
+function openProductFormModal(itemId = null) {
+    currentProductEditingId = itemId;
+    currentProductImageData = null;
 
-            menuItems.push(newItem);
-            saveMenuState();
-            renderAdminMenuManagement();
-            renderMenu();
+    const titleEl = document.getElementById('product-form-title');
+    const nameInput = document.getElementById('pform-name');
+    const catSelect = document.getElementById('pform-category');
+    const priceInput = document.getElementById('pform-price');
+    const descInput = document.getElementById('pform-desc');
+    const preview = document.getElementById('pform-img-preview');
+    const removeBtn = document.getElementById('pform-img-remove');
+    const fileInput = document.getElementById('pform-file');
+
+    fileInput.value = '';
+
+    if (itemId) {
+        const item = menuItems.find(i => i.id === itemId);
+        if (!item) return;
+
+        titleEl.innerText = 'تعديل بيانات الوجبة';
+        nameInput.value = item.name || '';
+        catSelect.value = item.category || 'كريب';
+        priceInput.value = item.price || '';
+        descInput.value = item.description || '';
+
+        if (item.image && item.image.trim()) {
+            preview.src = item.image;
+            preview.classList.remove('hidden');
+            removeBtn.classList.remove('hidden');
+            currentProductImageData = item.image;
+        } else {
+            preview.classList.add('hidden');
+            removeBtn.classList.add('hidden');
         }
+    } else {
+        titleEl.innerText = 'إضافة وجبة جديدة للمنيو';
+        nameInput.value = '';
+        catSelect.value = adminActiveCategory !== 'الكل' ? adminActiveCategory : 'كريب';
+        priceInput.value = '';
+        descInput.value = '';
+        preview.classList.add('hidden');
+        removeBtn.classList.add('hidden');
+    }
+
+    document.getElementById('menu-item-form-modal').classList.remove('hidden');
+}
+
+function closeProductFormModal() {
+    document.getElementById('menu-item-form-modal').classList.add('hidden');
+}
+
+function removeProductFormImage() {
+    currentProductImageData = '';
+    document.getElementById('pform-file').value = '';
+    document.getElementById('pform-img-preview').classList.add('hidden');
+    document.getElementById('pform-img-remove').classList.add('hidden');
+}
+
+function handleProductFormImageSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        alert('يرجى اختيار ملف صورة صالح!');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const maxWidth = 700;
+            const scale = Math.min(1, maxWidth / img.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const compressedData = canvas.toDataURL('image/jpeg', 0.75);
+            currentProductImageData = compressedData;
+
+            const preview = document.getElementById('pform-img-preview');
+            preview.src = compressedData;
+            preview.classList.remove('hidden');
+            document.getElementById('pform-img-remove').classList.remove('hidden');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveProductForm() {
+    const name = document.getElementById('pform-name').value.trim();
+    const priceVal = document.getElementById('pform-price').value;
+    const category = document.getElementById('pform-category').value;
+    const desc = document.getElementById('pform-desc').value.trim();
+
+    if (!name) {
+        alert('يرجى كتابة اسم الوجبة!');
+        return;
+    }
+
+    if (!priceVal || isNaN(priceVal) || parseFloat(priceVal) <= 0) {
+        alert('يرجى كتابة سعر صحيح!');
+        return;
+    }
+
+    const price = parseFloat(priceVal);
+
+    let finalImage = currentProductImageData;
+    if (!finalImage) {
+        finalImage = generateFoodCardSVG(name, category);
+    }
+
+    if (currentProductEditingId) {
+        const item = menuItems.find(i => i.id === currentProductEditingId);
+        if (item) {
+            item.name = name;
+            item.category = category;
+            item.price = price;
+            item.description = desc || `أشهى وجبات ${category} المميزة من مطعم عجيبة.`;
+            if (currentProductImageData !== null) {
+                item.image = finalImage;
+            }
+        }
+    } else {
+        const newItem = {
+            id: 'm' + Date.now(),
+            name: name,
+            category: category,
+            price: price,
+            description: desc || `أشهى وجبات ${category} المميزة من مطعم عجيبة.`,
+            available: true,
+            sizes: [`عادي (${price} ج.م)`],
+            extras: [],
+            image: finalImage
+        };
+        menuItems.unshift(newItem);
+    }
+
+    saveMenuState();
+    closeProductFormModal();
+    renderAdminMenuManagement();
+    renderMenu();
+}
 
         function switchTab(tab) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
