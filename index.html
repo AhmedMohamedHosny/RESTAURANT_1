@@ -876,50 +876,9 @@ body.pos-mode-active footer { display: none !important; }
                 <div class="space-y-4" id="timeline-container"></div>
             </div>
         </div>
-    <!-- OFFER FORM MODAL (إضافة / تعديل عرض) -->
-    <div id="offer-form-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
-            <div class="p-5 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-                <h3 id="offer-form-title" class="text-lg font-black text-brand-dark">إضافة عرض جديد</h3>
-                <button onclick="closeOfferFormModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
-            </div>
-            <div class="p-5 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">اسم العرض *</label>
-                    <input type="text" id="offer-form-title-input" placeholder="مثال: بيتزا + كانز هدية" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">مكونات العرض / وصف (اختياري)</label>
-                    <textarea id="offer-form-desc-input" rows="2" placeholder="مثال: بيتزا لارج + كانز كوكاكولا هدية" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none"></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">السعر قبل الخصم (اختياري)</label>
-                        <input type="number" id="offer-form-oldprice-input" placeholder="مثلاً 200" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">السعر بعد الخصم *</label>
-                        <input type="number" id="offer-form-newprice-input" placeholder="مثلاً 155" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">صورة العرض (اختياري)</label>
-                    <input type="file" accept="image/*" id="offer-form-image-input" onchange="handleOfferImageSelected(event)" class="w-full text-xs font-bold text-gray-600 file:ml-3 file:bg-brand-dark file:text-white file:border-0 file:rounded-lg file:px-4 file:py-2 file:font-bold file:cursor-pointer">
-                    <div class="mt-3 flex items-center gap-3">
-                        <img id="offer-form-image-preview" class="hidden w-20 h-20 rounded-xl object-cover border border-gray-200">
-                        <button type="button" id="offer-form-remove-image-btn" onclick="removeOfferSelectedImage()" class="hidden text-xs font-bold text-red-600 hover:underline">إزالة الصورة</button>
-                    </div>
-                </div>
-            </div>
-            <div class="p-5 border-t flex gap-3 sticky bottom-0 bg-white">
-                <button onclick="closeOfferFormModal()" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl text-sm">إلغاء</button>
-                <button onclick="saveOfferForm()" class="w-2/3 bg-brand-dark hover:bg-brand-light text-white font-black py-3 rounded-xl text-sm shadow-md">💾 حفظ العرض</button>
-            </div>
-        </div>
     </div>
 
     <!-- RESTAURANT DASHBOARD (ADMIN PANEL) -->
-    
     <div id="admin-dashboard-modal" class="fixed inset-0 bg-gray-100 z-50 hidden overflow-y-auto">
         <div class="bg-brand-dark text-white px-6 py-4 flex justify-between items-center shadow-md">
             <div class="flex items-center gap-3">
@@ -2826,8 +2785,7 @@ function renderOffersManagement() {
         <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6 max-w-3xl">
             <div class="flex justify-between items-center border-b pb-3">
                 <h3 class="text-xl font-bold text-gray-800">🔥 إدارة عروض الموقع</h3>
-                <button onclick="openOfferFormModal()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md">+ إضافة عرض جديد</button>
-                
+                <button onclick="promptAddNewOffer()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md">+ إضافة عرض جديد</button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 ${offersList.length === 0 ? `
@@ -2844,7 +2802,7 @@ function renderOffersManagement() {
                             ${offer.oldPrice ? `<span class="text-gray-400 line-through">${offer.oldPrice} ج.م</span>` : ''}
                         </div>
                         <div class="flex gap-2 pt-1">
-                            <button onclick="openOfferFormModal('${offerId}')" class="flex-grow bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1.5 rounded-lg text-xs">✏️ تعديل</button>                            
+                            <button onclick="promptEditOffer('${offerId}')" class="flex-grow bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1.5 rounded-lg text-xs">✏️ تعديل</button>
                             <button onclick="deleteOffer('${offerId}')" class="flex-grow bg-red-100 hover:bg-red-200 text-red-700 font-bold py-1.5 rounded-lg text-xs">🗑️ حذف</button>
                         </div>
                     </div>
@@ -2854,146 +2812,73 @@ function renderOffersManagement() {
     `;
 }
 
-// ===================== نموذج إضافة/تعديل العروض =====================
-let currentOfferFormId = null; // null = إضافة عرض جديد، غير null = تعديل عرض موجود
-let currentOfferFormImageData = null; // null = محدش لمس الصورة، '' = اتمسحت، نص = صورة جديدة/حالية
+// إضافة عرض جديد (الاسم والسعرين إجباريين، الوصف والصورة اختياريين)
+function promptAddNewOffer() {
+    const title = prompt("اسم العرض:");
+    if (!title || !title.trim()) return;
 
-// فتح المودال لإضافة عرض جديد (بدون id) أو تعديل عرض موجود (بتمرير الـ id)
-function openOfferFormModal(offerId = null) {
-    currentOfferFormId = offerId;
-    currentOfferFormImageData = null;
+    const description = prompt("مكونات العرض / وصف مختصر (اختياري - اضغط إلغاء أو اتركه فارغ للتخطي):") || "";
 
-    const titleEl = document.getElementById('offer-form-title');
-    const nameInput = document.getElementById('offer-form-title-input');
-    const descInput = document.getElementById('offer-form-desc-input');
-    const oldPriceInput = document.getElementById('offer-form-oldprice-input');
-    const newPriceInput = document.getElementById('offer-form-newprice-input');
-    const preview = document.getElementById('offer-form-image-preview');
-    const removeBtn = document.getElementById('offer-form-remove-image-btn');
-    const fileInput = document.getElementById('offer-form-image-input');
+    const oldPriceInput = prompt("السعر قبل الخصم (اختياري - اتركه فارغ لو مفيش سعر أصلي):");
+    const oldPrice = oldPriceInput && !isNaN(oldPriceInput) ? parseFloat(oldPriceInput) : null;
 
-    fileInput.value = '';
-
-    if (offerId) {
-        const offersToShow = Object.keys(offersData).length > 0 ? offersData : DEFAULT_OFFERS;
-        const offer = offersToShow[offerId];
-        if (!offer) return;
-
-        titleEl.innerText = 'تعديل العرض';
-        nameInput.value = offer.title || '';
-        descInput.value = offer.description || '';
-        oldPriceInput.value = offer.oldPrice || '';
-        newPriceInput.value = offer.newPrice || '';
-
-        if (offer.image && offer.image.trim()) {
-            preview.src = offer.image;
-            preview.classList.remove('hidden');
-            removeBtn.classList.remove('hidden');
-            currentOfferFormImageData = offer.image; // الصورة الحالية تفضل زي ما هي لحد ما يغيّرها أو يمسحها
-        } else {
-            preview.classList.add('hidden');
-            removeBtn.classList.add('hidden');
-        }
-    } else {
-        titleEl.innerText = 'إضافة عرض جديد';
-        nameInput.value = '';
-        descInput.value = '';
-        oldPriceInput.value = '';
-        newPriceInput.value = '';
-        preview.classList.add('hidden');
-        removeBtn.classList.add('hidden');
-    }
-
-    document.getElementById('offer-form-modal').classList.remove('hidden');
-}
-
-function closeOfferFormModal() {
-    document.getElementById('offer-form-modal').classList.add('hidden');
-}
-
-// إزالة الصورة المختارة/الحالية من الفورم
-function removeOfferSelectedImage() {
-    currentOfferFormImageData = ''; // فاضية = "امسح الصورة الحالية"
-    document.getElementById('offer-form-image-input').value = '';
-    document.getElementById('offer-form-image-preview').classList.add('hidden');
-    document.getElementById('offer-form-remove-image-btn').classList.add('hidden');
-}
-
-// معالجة اختيار صورة من جهاز الكاشير (موبايل أو كمبيوتر) وضغطها قبل الحفظ
-function handleOfferImageSelected(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-        alert('يرجى اختيار ملف صورة صحيح!');
+    const newPriceInput = prompt("السعر بعد الخصم (إجباري):");
+    if (!newPriceInput || isNaN(newPriceInput) || parseFloat(newPriceInput) <= 0) {
+        alert("يجب إدخال سعر صحيح بعد الخصم!");
         return;
     }
+    const newPrice = parseFloat(newPriceInput);
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            // تصغير الصورة لأقصى عرض 700px وضغطها كـ JPEG عشان تفضل خفيفة على قاعدة البيانات
-            const maxWidth = 700;
-            const scale = Math.min(1, maxWidth / img.width);
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const image = prompt("رابط صورة العرض (اختياري - اتركه فارغ وهيتحط شكل افتراضي بدلاً منه):") || "";
 
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            currentOfferFormImageData = compressedDataUrl;
-
-            const preview = document.getElementById('offer-form-image-preview');
-            preview.src = compressedDataUrl;
-            preview.classList.remove('hidden');
-            document.getElementById('offer-form-remove-image-btn').classList.remove('hidden');
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-// حفظ العرض (إضافة جديد أو تحديث موجود) في Firebase
-function saveOfferForm() {
-    const title = document.getElementById('offer-form-title-input').value.trim();
-    if (!title) {
-        alert('يرجى كتابة اسم العرض!');
-        return;
-    }
-
-    const newPriceVal = document.getElementById('offer-form-newprice-input').value;
-    if (!newPriceVal || isNaN(newPriceVal) || parseFloat(newPriceVal) <= 0) {
-        alert('يرجى إدخال السعر بعد الخصم بشكل صحيح!');
-        return;
-    }
-
-    const description = document.getElementById('offer-form-desc-input').value.trim();
-    const oldPriceVal = document.getElementById('offer-form-oldprice-input').value;
-    const oldPrice = oldPriceVal && !isNaN(oldPriceVal) ? parseFloat(oldPriceVal) : null;
-
-    let imageToSave = '';
-    if (currentOfferFormImageData !== null) {
-        imageToSave = currentOfferFormImageData;
-    } else if (currentOfferFormId) {
-        const offersToShow = Object.keys(offersData).length > 0 ? offersData : DEFAULT_OFFERS;
-        imageToSave = (offersToShow[currentOfferFormId] && offersToShow[currentOfferFormId].image) || '';
-    }
-
-    const offerIdToSave = currentOfferFormId || ('offer' + Date.now());
-
-    database.ref('offers/' + offerIdToSave).set({
-        title: title,
-        description: description,
+    const newOfferId = 'offer' + Date.now();
+    database.ref('offers/' + newOfferId).set({
+        title: title.trim(),
+        description: description.trim(),
         oldPrice: oldPrice,
-        newPrice: parseFloat(newPriceVal),
-        image: imageToSave
+        newPrice: newPrice,
+        image: image.trim()
     }).then(() => {
-        closeOfferFormModal();
         renderOffersManagement();
     }).catch(err => {
-        alert('حدث خطأ أثناء حفظ العرض، حاول مرة أخرى.');
+        alert('حدث خطأ أثناء إضافة العرض.');
+        console.error(err);
+    });
+}
+
+// تعديل عرض موجود
+function promptEditOffer(offerId) {
+    const offersToShow = Object.keys(offersData).length > 0 ? offersData : DEFAULT_OFFERS;
+    const offer = offersToShow[offerId];
+    if (!offer) return;
+
+    const title = prompt("اسم العرض:", offer.title);
+    if (!title || !title.trim()) return;
+
+    const description = prompt("مكونات العرض / وصف مختصر (اختياري):", offer.description || "") || "";
+
+    const oldPriceInput = prompt("السعر قبل الخصم (اختياري - اتركه فارغ لو مفيش):", offer.oldPrice || "");
+    const oldPrice = oldPriceInput && !isNaN(oldPriceInput) ? parseFloat(oldPriceInput) : null;
+
+    const newPriceInput = prompt("السعر بعد الخصم (إجباري):", offer.newPrice);
+    if (!newPriceInput || isNaN(newPriceInput) || parseFloat(newPriceInput) <= 0) {
+        alert("يجب إدخال سعر صحيح بعد الخصم!");
+        return;
+    }
+    const newPrice = parseFloat(newPriceInput);
+
+    const image = prompt("رابط صورة العرض (اختياري):", offer.image || "") || "";
+
+    database.ref('offers/' + offerId).set({
+        title: title.trim(),
+        description: description.trim(),
+        oldPrice: oldPrice,
+        newPrice: newPrice,
+        image: image.trim()
+    }).then(() => {
+        renderOffersManagement();
+    }).catch(err => {
+        alert('حدث خطأ أثناء التعديل.');
         console.error(err);
     });
 }
