@@ -12,6 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <!-- مكتبة تصدير Excel بتنسيقات وألوان -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<!-- مكتبة الرسوم البيانية للتحليلات -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -743,6 +745,7 @@ body.pos-mode-active footer { display: none !important; }
                 <div class="space-y-1 text-sm text-gray-600">
                     <div class="flex justify-between"><span>المجموع الفرعي:</span> <span id="cart-subtotal" class="font-bold text-gray-800">0 ج.م</span></div>
                     <div class="flex justify-between"><span>رسوم التوصيل:</span> <span id="cart-delivery-fee" class="font-bold text-gray-800">15 ج.م</span></div>
+                    <p id="cart-delivery-time-estimate" class="text-xs font-bold text-amber-700 text-center"></p>
                     <div class="flex justify-between text-base font-black text-brand-dark pt-2 border-t border-gray-200">
                         <span>الإجمالي:</span> <span id="cart-total" class="text-xl text-brand-dark">0 ج.م</span>
                     </div>
@@ -969,6 +972,12 @@ body.pos-mode-active footer { display: none !important; }
                 <button id="admin-tab-loyalty" onclick="switchAdminSubTab('loyalty')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🎁 نقاط الولاء
                 </button>
+                <button id="admin-tab-delivery-times" onclick="switchAdminSubTab('delivery-times')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+                    🛵 أوقات التوصيل
+                </button>
+                <button id="admin-tab-analytics" onclick="switchAdminSubTab('analytics')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+                    📊 التحليلات
+                </button>
                 
                 <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
 
@@ -1030,6 +1039,27 @@ body.pos-mode-active footer { display: none !important; }
 
 <!-- قسم التحكم في نظام نقاط الولاء -->
 <div id="admin-view-loyalty" class="hidden"></div>
+
+<!-- قسم التحكم في أوقات التوصيل المتوقعة لكل منطقة -->
+<div id="admin-view-delivery-times" class="hidden"></div>
+
+<!-- قسم التحليلات البصرية بالرسوم البيانية -->
+<div id="admin-view-analytics" class="hidden space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+            <h4 class="font-bold text-gray-800 mb-3 text-sm">🏆 أعلى 8 أصناف مبيعاً (بالكمية)</h4>
+            <canvas id="chart-top-items" height="220"></canvas>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+            <h4 class="font-bold text-gray-800 mb-3 text-sm">⏰ أوقات الذروة خلال اليوم (عدد الطلبات لكل ساعة)</h4>
+            <canvas id="chart-peak-hours" height="220"></canvas>
+        </div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+        <h4 class="font-bold text-gray-800 mb-3 text-sm">📈 مقارنة مبيعات آخر 14 يوم</h4>
+        <canvas id="chart-daily-sales" height="90"></canvas>
+    </div>
+</div>
 
 
 
@@ -1273,7 +1303,12 @@ const REAL_AGEEBA_MENU = [
         let restaurantStatusData = null; // حالة فتح/غلق المحل القادمة من Firebase
         let loyaltySettingsData = null; // إعدادات نظام نقاط الولاء
         let customersPointsData = {}; // نقاط كل العملاء حسب رقم الهاتف
-window.addEventListener('DOMContentLoaded', () => {
+        let deliveryAreaTimesData = {}; // أوقات التوصيل التقريبية لكل منطقة (تتحكم فيها الكاشير)
+        let trackedOrderIdsStatusMap = {}; // لتتبع تغيّر حالة الطلبات اللي العميل بيتابعها وإشعاره
+        let originalPageTitle = document.title;
+        let titleFlashInterval = null;
+        const notificationChime = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');        
+        window.addEventListener('DOMContentLoaded', () => {
             // Force replace storage with actual official menu data
             localStorage.setItem('ageeba_real_menu', JSON.stringify(REAL_AGEEBA_MENU));
             menuItems = REAL_AGEEBA_MENU;
@@ -1787,7 +1822,7 @@ function addOfferToCart(title, price, image) {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `).join('') + renderUpsellSuggestion();
 
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 const delivery = (typeof currentDeliveryFee !== 'undefined') ? currentDeliveryFee : 15;
@@ -1795,6 +1830,73 @@ document.getElementById('cart-delivery-fee').innerText = delivery + ' ج.م';
 document.getElementById('cart-subtotal').innerText = subtotal + ' ج.م';
 document.getElementById('cart-total').innerText = (subtotal + delivery) + ' ج.م';
             
+        }
+
+        // اقتراحات ذكية (Upsell) بناءً على نوع الأصناف الموجودة في السلة
+        const UPSELL_RULES = [
+            { triggerCategories: ['بيتزا', 'كريب', 'القنبلة', 'صواريخ', 'ساندوتشات'], suggestId: 'dr1', discountPrice: 15, note: 'مع طلبك الحالي' },
+            { triggerCategories: ['كريب', 'وافل', 'كريب الحلو'], suggestId: 'a2', discountPrice: 25, note: 'بطاطس ساخنة تكمّل طلبك' }
+        ];
+
+        function renderUpsellSuggestion() {
+            if (cart.length === 0) return '';
+
+            const cartItemNames = cart.map(i => i.name);
+            const cartCategories = menuItems.filter(m => cartItemNames.includes(m.name)).map(m => m.category);
+
+            let matchedRule = null;
+            for (const rule of UPSELL_RULES) {
+                if (rule.triggerCategories.some(cat => cartCategories.includes(cat))) {
+                    // تجاهل الاقتراح لو الصنف ده أصلاً موجود في السلة
+                    const alreadyInCart = cart.some(i => {
+                        const suggestItem = menuItems.find(m => m.id === rule.suggestId);
+                        return suggestItem && i.name === suggestItem.name;
+                    });
+                    if (!alreadyInCart) {
+                        matchedRule = rule;
+                        break;
+                    }
+                }
+            }
+
+            if (!matchedRule) return '';
+
+            const suggestItem = menuItems.find(m => m.id === matchedRule.suggestId);
+            if (!suggestItem || !suggestItem.available) return '';
+
+            return `
+                <div class="bg-gradient-to-l from-amber-50 to-amber-100 border-2 border-dashed border-amber-400 rounded-xl p-3 flex items-center gap-3 mt-2">
+                    <img src="${suggestItem.image}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0">
+                    <div class="flex-grow">
+                        <p class="text-[10px] font-black text-amber-700">🔥 عرض خاص - ${matchedRule.note}</p>
+                        <p class="text-sm font-bold text-gray-900">${suggestItem.name}</p>
+                        <p class="text-xs">
+                            <span class="font-black text-green-700">${matchedRule.discountPrice} ج.م</span>
+                            <span class="text-gray-400 line-through mr-1">${suggestItem.price} ج.م</span>
+                        </p>
+                    </div>
+                    <button onclick="addUpsellItemToCart('${suggestItem.id}', ${matchedRule.discountPrice})" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg text-[11px] flex-shrink-0">
+                        ➕ زودها
+                    </button>
+                </div>
+            `;
+        }
+
+        function addUpsellItemToCart(itemId, discountPrice) {
+            const item = menuItems.find(i => i.id === itemId);
+            if (!item) return;
+
+            cart.push({
+                cartItemId: Date.now().toString(),
+                name: item.name,
+                price: discountPrice,
+                selectedSize: 'عرض إضافي',
+                selectedExtras: [],
+                quantity: 1,
+                image: item.image
+            });
+
+            saveCartState();
         }
 
         function changeCartQty(cartItemId, delta) {
@@ -1900,15 +2002,25 @@ function updateDeliveryAreaPrice() {
 // (بتتنادى سواء العميل غيّر الاختيار يدوياً، أو عند تحميل بيانات محفوظة، أو عند فتح السلة/الفورم)
 function syncDeliveryFeeFromSelectedArea() {
     const areaSelect = document.getElementById('cust-area');
+    let selectedAreaName = '';
     if (areaSelect && areaSelect.selectedIndex >= 0) {
         const selectedOption = areaSelect.options[areaSelect.selectedIndex];
         currentDeliveryFee = parseFloat(selectedOption.getAttribute('data-price') || "15");
+        selectedAreaName = selectedOption.value;
     } else {
         currentDeliveryFee = 15; // قيمة افتراضية لو مفيش قائمة أو اختيار بعد
     }
 
     const feeDisplay = document.getElementById('cart-delivery-fee');
     if (feeDisplay) feeDisplay.innerText = currentDeliveryFee + ' ج.م';
+
+    // عرض الوقت المتوقع للتوصيل لو المنطقة محددة
+    const estimatedTimeDisplay = document.getElementById('cart-delivery-time-estimate');
+    if (estimatedTimeDisplay) {
+        const minutes = selectedAreaName && deliveryAreaTimesData[selectedAreaName] ? deliveryAreaTimesData[selectedAreaName] : null;
+        estimatedTimeDisplay.innerText = minutes ? `⏱️ خلال ${minutes} دقيقة تقريباً` : '';
+    }
+
     renderCartItems();
 }
 
@@ -2201,12 +2313,20 @@ function renderAdminDashboard() {
 
         
         if (Array.isArray(order.items) && order.items.length > 0) {
-            itemsHtml = order.items.map(item => `
-                <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1">
-                    <span>• ${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
-                    <span>${item.priceAtPurchase * item.quantity} ج.م</span>
+            itemsHtml = order.items.map(item => {
+                const menuItemRef = menuItems.find(m => m.name === item.name);
+                const isStillAvailable = !menuItemRef || menuItemRef.available;
+                return `
+                <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1 gap-2">
+                    <span class="${!isStillAvailable ? 'line-through text-red-400' : ''}">• ${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <span>${item.priceAtPurchase * item.quantity} ج.م</span>
+                        ${isStillAvailable ? `
+                            <button onclick="quickMarkItemSoldOut('${item.name.replace(/'/g, "\\'")}')" title="نفّذ الصنف من المنيو فوراً" class="bg-red-100 hover:bg-red-200 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded">⚠️ خلص</button>
+                        ` : `<span class="text-[9px] font-black text-red-500">نافد حالياً</span>`}
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         } else {
             itemsHtml = `<span class="text-xs text-red-500 font-bold">لا توجد تفاصيل أصناف</span>`;
         }
@@ -2233,12 +2353,13 @@ function renderAdminDashboard() {
         let actionButtonsHtml = '';
         if (order.status === 'NEW') {
             actionButtonsHtml = `
-                <button onclick="updateOrderStatus('${order.id}', 'PREPARING')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-1 shadow">
-                    👨‍🍳 قبول الطلب وبدء التحضير
+                <button onclick="acceptOrderWithPrepTime('${order.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-1 shadow">
+                    👨‍🍳 قبول الطلب وتحديد وقت التحضير
                 </button>
             `;
         } else if (order.status === 'PREPARING' || order.status === 'ACCEPTED') {
             actionButtonsHtml = `
+                ${order.estimatedMinutes ? `<p class="text-center text-[11px] font-black text-blue-700 bg-blue-50 rounded-lg py-1">⏱️ الوقت المتوقع: ${order.estimatedMinutes} دقيقة</p>` : ''}
                 <button onclick="updateOrderStatus('${order.id}', 'OUT_FOR_DELIVERY')" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-1 shadow">
                     🛵 خرج للتوصيل (مع المندوب)
                 </button>
@@ -2501,6 +2622,7 @@ async function exportOrdersReportExcel() {
         }
 
 function trackOrder() {
+    requestNotificationPermissionIfNeeded();
     const inputVal = document.getElementById('track-input-id').value.trim();
     const resultDiv = document.getElementById('track-result');
     const timelineContainer = document.getElementById('timeline-container');
@@ -2548,6 +2670,15 @@ function trackOrder() {
                         <p><strong>العنوان:</strong> ${order.address}</p>
                         <p><strong>الإجمالي:</strong> ${order.total} ج.م</p>
                     </div>
+                    ${order.estimatedMinutes && (order.status === 'PREPARING' || order.status === 'ACCEPTED') ? `
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+                            <p class="text-[11px] font-black text-blue-700">⏱️ وقت التحضير المتوقع: ${order.estimatedMinutes} دقيقة</p>
+                        </div>
+                    ` : ''}
+                    
+                    <button onclick='reorderPreviousOrder(${JSON.stringify(order.items || []).replace(/'/g, "&#39;")})' class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 rounded-lg text-xs mt-1">
+                        🔁 اطلب نفس الطلب تاني
+                    </button>
                     ${renderRatingSectionForOrder(order)}
                 </div>
 
@@ -2612,7 +2743,7 @@ function closeAdminDashboard() {
 }
 
 function switchAdminSubTab(tab) {
-    const tabs = ['orders', 'menu', 'blacklist', 'status', 'loyalty'];
+    const tabs = ['orders', 'menu', 'blacklist', 'status', 'loyalty', 'delivery-times', 'analytics'];
     tabs.forEach(t => {
         const btn = document.getElementById(`admin-tab-${t}`);
         const view = document.getElementById(`admin-view-${t}`);
@@ -2624,6 +2755,165 @@ function switchAdminSubTab(tab) {
     if (tab === 'blacklist') renderBlacklistManagement();
     if (tab === 'status') renderStoreStatusManagement();
     if (tab === 'loyalty') renderLoyaltyManagement();
+    if (tab === 'delivery-times') renderDeliveryTimesManagement();
+    if (tab === 'analytics') renderAnalyticsCharts();
+}
+
+// متغيرات لحفظ نسخ الرسوم البيانية عشان نقدر نمسحها ونعيد رسمها بدون تكرار
+let chartTopItemsInstance = null;
+let chartPeakHoursInstance = null;
+let chartDailySalesInstance = null;
+
+function renderAnalyticsCharts() {
+    const validOrders = orders.filter(o => o.status !== 'CANCELLED');
+
+    // 1. أعلى 8 أصناف مبيعاً
+    const itemsCountMap = {};
+    validOrders.forEach(order => {
+        (order.items || []).forEach(item => {
+            itemsCountMap[item.name] = (itemsCountMap[item.name] || 0) + Number(item.quantity || 0);
+        });
+    });
+    const topItemsSorted = Object.entries(itemsCountMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+    const ctxTop = document.getElementById('chart-top-items');
+    if (chartTopItemsInstance) chartTopItemsInstance.destroy();
+    chartTopItemsInstance = new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+            labels: topItemsSorted.map(i => i[0]),
+            datasets: [{
+                label: 'الكمية المباعة',
+                data: topItemsSorted.map(i => i[1]),
+                backgroundColor: '#D97706',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
+        }
+    });
+
+    // 2. أوقات الذروة (عدد الطلبات لكل ساعة من 0 لـ 23)
+    const hourCounts = new Array(24).fill(0);
+    validOrders.forEach(order => {
+        if (!order.createdAt) return;
+        const match = order.createdAt.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+        if (match) {
+            let hour = parseInt(match[1]);
+            const period = match[3];
+            if (period === 'م' && hour !== 12) hour += 12;
+            if (period === 'ص' && hour === 12) hour = 0;
+            hourCounts[hour]++;
+        }
+    });
+
+    const ctxPeak = document.getElementById('chart-peak-hours');
+    if (chartPeakHoursInstance) chartPeakHoursInstance.destroy();
+    chartPeakHoursInstance = new Chart(ctxPeak, {
+        type: 'bar',
+        data: {
+            labels: hourCounts.map((_, h) => `${h}:00`),
+            datasets: [{
+                label: 'عدد الطلبات',
+                data: hourCounts,
+                backgroundColor: '#58081A',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    // 3. مقارنة مبيعات آخر 14 يوم
+    const dailySalesMap = {};
+    const today = new Date();
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        dailySalesMap[key] = 0;
+    }
+    validOrders.filter(o => o.status === 'DELIVERED').forEach(order => {
+        if (dailySalesMap.hasOwnProperty(order.createdAtDate)) {
+            dailySalesMap[order.createdAtDate] += Number(order.total || 0);
+        }
+    });
+
+    const ctxDaily = document.getElementById('chart-daily-sales');
+    if (chartDailySalesInstance) chartDailySalesInstance.destroy();
+    chartDailySalesInstance = new Chart(ctxDaily, {
+        type: 'line',
+        data: {
+            labels: Object.keys(dailySalesMap),
+            datasets: [{
+                label: 'المبيعات (ج.م)',
+                data: Object.values(dailySalesMap),
+                borderColor: '#D4AF37',
+                backgroundColor: 'rgba(212,175,55,0.15)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#58081A'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+// قائمة أسماء المناطق نفسها الموجودة في فورم الطلب (لضمان التطابق)
+const DELIVERY_AREAS_LIST = [
+    'البدرشين (حول المحل)', 'البدرشين', 'الشورى والجعفري', 'العزبة الشرقية والغربية',
+    'كوبري الري ومصنع الشاي', 'الطرفاية وميت رهينة', 'الحوامدية والشنباب',
+    'العزيزية والمرازيق', 'سقارة وأبوصير', 'الشوبك ومزغونة', 'دهشور وشبرامنت', 'منطقة أخرى'
+];
+
+function renderDeliveryTimesManagement() {
+    const container = document.getElementById('admin-view-delivery-times');
+    if (!container) return;
+
+    const times = deliveryAreaTimesData || {};
+
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5 max-w-2xl">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">🛵 أوقات التوصيل المتوقعة لكل منطقة</h3>
+            <p class="text-xs text-gray-500 font-bold">حدد تقريباً كام دقيقة توصيل بيستغرق لكل منطقة، وهيظهر ده للعميل في السلة وصفحة تتبع الطلب.</p>
+            <div class="space-y-2">
+                ${DELIVERY_AREAS_LIST.map(area => `
+                    <div class="flex items-center justify-between gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <span class="font-bold text-gray-800 text-sm">${area}</span>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="5" step="5" id="delivery-time-${DELIVERY_AREAS_LIST.indexOf(area)}" value="${times[area] || 30}" class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm font-bold text-center">
+                            <span class="text-xs text-gray-500 font-bold">دقيقة</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="saveDeliveryTimes()" class="bg-brand-dark hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-sm">
+                💾 حفظ الأوقات
+            </button>
+        </div>
+    `;
+}
+
+function saveDeliveryTimes() {
+    const updatedTimes = {};
+    DELIVERY_AREAS_LIST.forEach((area, idx) => {
+        const val = parseInt(document.getElementById(`delivery-time-${idx}`).value) || 30;
+        updatedTimes[area] = val;
+    });
+    database.ref('deliveryAreaTimes').set(updatedTimes).then(() => {
+        alert('تم حفظ أوقات التوصيل بنجاح ✅');
+    }).catch(err => console.error(err));
 }
 
 // ===================== نظام نقاط الولاء (تحكم كامل من الكاشير) =====================
@@ -3073,6 +3363,31 @@ function renderBlacklistManagement() {
         </div>
     `).join('');
 }
+// إعادة طلب نفس أصناف طلب سابق دفعة واحدة للسلة
+function reorderPreviousOrder(previousItems) {
+    if (!Array.isArray(previousItems) || previousItems.length === 0) {
+        alert('لا توجد تفاصيل كافية لإعادة هذا الطلب!');
+        return;
+    }
+
+    previousItems.forEach(item => {
+        cart.push({
+            cartItemId: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+            name: item.name,
+            price: item.priceAtPurchase,
+            selectedSize: item.selectedSize || 'عادي',
+            selectedExtras: item.selectedExtras || [],
+            quantity: item.quantity || 1,
+            image: generateFoodCardSVG(item.name, 'عجيبه')
+        });
+    });
+
+    saveCartState();
+    closeTrackModal();
+    toggleCartModal();
+    alert('تم إضافة أصناف طلبك السابق للسلة، تقدر تعدّل عليها وتكمل الطلب 🎉');
+}
+
 // عرض قسم التقييم داخل كارت تتبع الطلب (يظهر فقط لو الطلب اتسلم)
 function renderRatingSectionForOrder(order) {
     if (order.status !== 'DELIVERED') return '';
@@ -3225,6 +3540,26 @@ function printReceiptForOrder(order) {
     window.print();
 }
 
+// قبول الطلب مع تحديد وقت تحضير تقريبي (يظهر للعميل في صفحة التتبع)
+function acceptOrderWithPrepTime(orderId) {
+    const minutesInput = prompt('كام دقيقة تقريباً هياخد تحضير الطلب ده؟', '20');
+    if (minutesInput === null) return;
+    const minutes = parseInt(minutesInput);
+    if (isNaN(minutes) || minutes <= 0) {
+        alert('يرجى إدخال رقم صحيح للدقائق!');
+        return;
+    }
+
+    dismissBanner();
+    database.ref('orders/' + orderId).update({
+        status: 'PREPARING',
+        estimatedMinutes: minutes,
+        acceptedAtTimestamp: Date.now()
+    }).then(() => {
+        renderAdminDashboard();
+    }).catch(err => console.error(err));
+}
+
 function updateOrderStatus(orderId, newStatus) {
     // 1. إيقاف الصوت والتنبيه الأصفر فوراً
     dismissBanner();
@@ -3348,6 +3683,18 @@ function filterAdminCategory(catId) {
     renderAdminMenuManagement();
 }
 
+// إغلاق الصنف فوراً من داخل شاشة الطلبات مباشرة (بدون الدخول لتاب إدارة المنيو)
+function quickMarkItemSoldOut(itemName) {
+    if (!confirm(`هل تريد تعليم "${itemName}" كصنف نافد الآن؟ لن يظهر متاحاً للعملاء الجدد.`)) return;
+    const item = menuItems.find(i => i.name === itemName);
+    if (item) {
+        item.available = false;
+        saveMenuState();
+        renderMenu();
+        renderAdminDashboard();
+    }
+}
+
 // دالة تغيير التوفر (متاح / غير متاح)
 function toggleItemAvailability(itemId) {
     const item = menuItems.find(i => i.id === itemId);
@@ -3397,13 +3744,19 @@ database.ref('customersPoints').on('value', (snapshot) => {
     if (document.getElementById('admin-view-loyalty') && !document.getElementById('admin-view-loyalty').classList.contains('hidden')) {
         renderLoyaltyManagement();
     }
-});إعادة فحص كل 30 ثانية لتغطية المواعيد التلقائية
+});
 
+// الاستماع اللحظي لأوقات التوصيل لكل منطقة
+database.ref('deliveryAreaTimes').on('value', (snapshot) => {
+    deliveryAreaTimesData = snapshot.val() || {};
+    if (document.getElementById('admin-view-delivery-times') && !document.getElementById('admin-view-delivery-times').classList.contains('hidden')) {
+        renderDeliveryTimesManagement();
+    }
+    syncDeliveryFeeFromSelectedArea(); // إعادة عرض وقت التوصيل في السلة لو مفتوحة
+});
 // الاستماع المباشر واللحظي للطلبات
 let isFirstLoad = true;
 database.ref('orders').on('value', (snapshot) => {
-
-    
     const data = snapshot.val();
     orders = data ? Object.values(data) : [];
 
@@ -3421,9 +3774,79 @@ database.ref('orders').on('value', (snapshot) => {
             triggerNewOrderAlert(latestNewOrder.id);
         }
     }
+
+    // 3. إشعار العميل نفسه لو حالة أي طلب من طلباته اللي بيتابعها اتغيرت (حتى لو في تبويب تاني)
+    if (!isAdminOpen && !isAdminLogged && !isFirstLoad) {
+        notifyCustomerOfTrackedStatusChanges();
+    }
     
     isFirstLoad = false;
 });
+
+// فحص كل الطلبات المُتابَعة من العميل الحالي، ولو أي حالة اتغيرت يبعت إشعار
+function notifyCustomerOfTrackedStatusChanges() {
+    const trackedPhone = localStorage.getItem('ageeba_customer_data') ? JSON.parse(localStorage.getItem('ageeba_customer_data')).phone : null;
+    if (!trackedPhone) return;
+
+    const myOrders = orders.filter(o => o.phone && o.phone.includes(trackedPhone));
+
+    myOrders.forEach(order => {
+        const previousStatus = trackedOrderIdsStatusMap[order.id];
+        if (previousStatus && previousStatus !== order.status) {
+            triggerCustomerStatusNotification(order);
+        }
+        trackedOrderIdsStatusMap[order.id] = order.status;
+    });
+
+    // أول مرة بس نسجل الحالات من غير ما ننبه (عشان منبهش على حاجة قديمة)
+    if (Object.keys(trackedOrderIdsStatusMap).length === 0) {
+        myOrders.forEach(order => { trackedOrderIdsStatusMap[order.id] = order.status; });
+    }
+}
+
+// عرض إشعار للعميل: صوت + وميض في عنوان التبويب + Notification حقيقي لو مسموح
+function triggerCustomerStatusNotification(order) {
+    try { notificationChime.play(); } catch(e) {}
+
+    const statusLabel = getStatusArabicLabel(order.status);
+    startTitleFlash(`🔔 طلبك #${order.id}: ${statusLabel}`);
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('تحديث على طلبك من عجيبه 🍕', {
+            body: `طلبك #${order.id} الآن: ${statusLabel}`,
+            icon: 'logo.png'
+        });
+    }
+}
+
+// وميض عنوان التبويب لجذب انتباه العميل لو كان في تبويب تاني
+function startTitleFlash(message) {
+    if (titleFlashInterval) clearInterval(titleFlashInterval);
+    let showAlert = true;
+    titleFlashInterval = setInterval(() => {
+        document.title = showAlert ? message : originalPageTitle;
+        showAlert = !showAlert;
+    }, 1500);
+
+    // إيقاف الوميض تلقائياً لما العميل يرجع للتبويب
+    window.addEventListener('focus', stopTitleFlashOnce, { once: true });
+    setTimeout(stopTitleFlashOnce, 20000); // إيقاف تلقائي بعد 20 ثانية حتى لو محدش رجع
+}
+
+function stopTitleFlashOnce() {
+    if (titleFlashInterval) {
+        clearInterval(titleFlashInterval);
+        titleFlashInterval = null;
+        document.title = originalPageTitle;
+    }
+}
+
+// طلب إذن الإشعارات من المتصفح أول ما العميل يتابع طلب لأول مرة
+function requestNotificationPermissionIfNeeded() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
 // دالة تعديل السعر المباشر
 function editItemPrice(itemId) {
     const item = menuItems.find(i => i.id === itemId);
