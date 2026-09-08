@@ -920,7 +920,7 @@ body.pos-mode-active footer { display: none !important; }
 
     <!-- RESTAURANT DASHBOARD (ADMIN PANEL) -->
     
-    <div id="admin-dashboard-modal" class="fixed inset-0 bg-gray-100 z-50 hidden overflow-y-auto">
+<div id="admin-dashboard-modal" class="fixed inset-0 bg-gray-100 z-[100000] hidden overflow-y-auto">        
         <div class="bg-brand-dark text-white px-6 py-4 flex justify-between items-center shadow-md">
             <div class="flex items-center gap-3">
                 <span class="bg-brand-gold text-brand-dark font-black px-3 py-1 rounded-lg text-sm">لوحة الكاشير</span>
@@ -2805,11 +2805,22 @@ function handleLogoClick() {
 function openAdminAuth() {
     const pwd = prompt("أدخل كلمة مرور كاشير مطعم عجيبه :");
     if (pwd === "123456789" || pwd === "admin") {
-        localStorage.setItem('ageeba_admin_logged_in', 'true'); // حفظ حالة تسجيل الدخول
-        document.getElementById('admin-dashboard-modal').classList.remove('hidden');
-        renderAdminDashboard();
-        applyAdminSavedTheme();
-        checkAndApplyRestaurantStatus();
+        localStorage.setItem('ageeba_admin_logged_in', 'true');
+        
+        // إخفاء شاشة إغلاق المحل فوراً للكاشير
+        const storeOverlay = document.getElementById('store-closed-overlay');
+        if (storeOverlay) storeOverlay.classList.add('hidden');
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflow = 'auto';
+
+        const adminModal = document.getElementById('admin-dashboard-modal');
+        if (adminModal) {
+            adminModal.classList.remove('hidden');
+            adminModal.style.display = 'block';
+        }
+        
+        try { renderAdminDashboard(); } catch(e) { console.error(e); }
+        try { applyAdminSavedTheme(); } catch(e) { console.error(e); }
     } else if (pwd !== null) {
         alert("كلمة المرور غير صحيحة!");
     }
@@ -3512,17 +3523,26 @@ function checkAndApplyRestaurantStatus() {
     const overlay = document.getElementById('store-closed-overlay');
     if (!overlay) return;
 
-    const isAdminOpen = !document.getElementById('admin-dashboard-modal')?.classList.contains('hidden');
+    const adminModal = document.getElementById('admin-dashboard-modal');
+    const isAdminOpen = adminModal && !adminModal.classList.contains('hidden');
+    const isAdminLogged = localStorage.getItem('ageeba_admin_logged_in') === 'true';
     const isPosMode = document.body.classList.contains('pos-mode-active');
+
+    // لو الكاشير مسجل دخول أو فاتح اللوحة، لا تظهر شاشة الإغلاق أبداً
+    if (isAdminOpen || isAdminLogged || isPosMode) {
+        overlay.classList.add('hidden');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        return;
+    }
 
     const status = getEffectiveStoreStatus();
 
-    if (!status.isOpen && !isAdminOpen && !isPosMode) {
+    if (!status.isOpen) {
         overlay.classList.remove('hidden');
         const timeDisplay = document.getElementById('store-reopen-time-display');
         if (timeDisplay) timeDisplay.innerText = formatTimeToArabic12h(status.reopenTimeDisplay);
 
-        // منع أي تمرير (سكرول) في الموقع تماماً أثناء الإغلاق
         document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
         document.body.style.height = '100vh';
