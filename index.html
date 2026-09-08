@@ -2319,12 +2319,6 @@ function renderAdminDashboard() {
                 return `
                 <div class="flex justify-between items-center text-sm font-bold text-gray-800 my-1 gap-2">
                     <span class="${!isStillAvailable ? 'line-through text-red-400' : ''}">• ${item.name} (${item.selectedSize || 'عادي'}) × ${item.quantity}</span>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <span>${item.priceAtPurchase * item.quantity} ج.م</span>
-                        ${isStillAvailable ? `
-                            <button onclick="quickMarkItemSoldOut('${item.name.replace(/'/g, "\\'")}')" title="نفّذ الصنف من المنيو فوراً" class="bg-red-100 hover:bg-red-200 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded">⚠️ خلص</button>
-                        ` : `<span class="text-[9px] font-black text-red-500">نافد حالياً</span>`}
-                    </div>
                 </div>
             `}).join('');
         } else {
