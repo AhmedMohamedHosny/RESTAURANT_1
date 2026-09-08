@@ -911,6 +911,18 @@ body.pos-mode-active footer { display: none !important; }
                 <h2 class="text-xl font-bold">مطعم عجيبه - البدرشين 👨‍🍳</h2>
             </div>
             <div class="flex items-center gap-2">
+                <div class="relative">
+                    <button onclick="toggleAdminMoreMenu()" class="p-2.5 rounded-full text-amber-300 hover:bg-white/10 transition-colors" title="المزيد من الإعدادات">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                    <div id="admin-more-dropdown" class="hidden absolute left-0 mt-2 w-60 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden text-right">
+                        <button onclick="openAdminMoreSection('blacklist')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">🚫 القائمة السوداء (المحظورين)</button>
+                        <button onclick="openAdminMoreSection('status')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🕐 حالة المحل</button>
+                        <button onclick="openAdminMoreSection('loyalty')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🎁 نقاط الولاء</button>
+                        <button onclick="openAdminMoreSection('delivery-times')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🛵 أوقات التوصيل</button>
+                        <button onclick="openAdminMoreSection('analytics')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">📊 التحليلات</button>
+                    </div>
+                </div>
                 <button onclick="toggleAdminDarkMode()" class="p-2.5 rounded-full text-amber-300 hover:bg-white/10 transition-colors" title="تغيير الوضع الليلي/النهاري">
                     <i id="admin-theme-icon" class="fa-solid fa-moon text-lg"></i>
                 </button>
@@ -918,6 +930,7 @@ body.pos-mode-active footer { display: none !important; }
                     خروج من اللوحة
                 </button>
             </div>
+            
         </div>
 
         <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
@@ -957,31 +970,13 @@ body.pos-mode-active footer { display: none !important; }
             </div>
 
             <div class="flex gap-4 border-b border-gray-300 pb-2">
-<button id="admin-tab-orders" onclick="switchAdminSubTab('orders')" class="font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg">
+                <button id="admin-tab-orders" onclick="switchAdminSubTab('orders')" class="font-black text-brand-dark border-b-2 border-brand-dark pb-2 px-2 text-lg">
                     📋 إدارة الطلبات المباشرة
                 </button>
                 <button id="admin-tab-menu" onclick="switchAdminSubTab('menu')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🍔 إدارة المنيو والوفرة
                 </button>
-                <button id="admin-tab-blacklist" onclick="switchAdminSubTab('blacklist')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-                    🚫 القائمة السوداء (المحظورين)
-                </button>
-                <button id="admin-tab-status" onclick="switchAdminSubTab('status')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-                    🕐 حالة المحل
-                </button>
-                <button id="admin-tab-loyalty" onclick="switchAdminSubTab('loyalty')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-                    🎁 نقاط الولاء
-                </button>
-                <button id="admin-tab-delivery-times" onclick="switchAdminSubTab('delivery-times')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-                    🛵 أوقات التوصيل
-                </button>
-                <button id="admin-tab-analytics" onclick="switchAdminSubTab('analytics')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
-                    📊 التحليلات
-                </button>
-                
-                <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
 
-                
                 <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
                     <span>➕</span>
                     <span>طلب كاونتر جديد</span>
@@ -1081,7 +1076,20 @@ body.pos-mode-active footer { display: none !important; }
             </div>
         </div>
     </div>
+
+    <!-- صفحة كاملة تظهر فوق لوحة الكاشير لعرض أي قسم من قائمة "المزيد" -->
+    <div id="admin-more-overlay" class="hidden fixed inset-0 bg-gray-100 z-[70] overflow-y-auto">
+        <div class="bg-brand-dark text-white px-6 py-4 flex items-center gap-4 shadow-md sticky top-0 z-10">
+            <button onclick="closeAdminMoreSection()" class="bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                <i class="fa-solid fa-arrow-right"></i> رجوع
+            </button>
+            <h2 id="admin-more-title" class="text-lg font-bold"></h2>
+        </div>
+        <div id="admin-more-content" class="max-w-7xl mx-auto p-4 sm:p-6"></div>
+    </div>
+
     <!-- قالب الفاتورة المخصص للطباعة فقط -->
+    
 <div id="print-receipt" class="hidden print:block p-4 font-mono text-black text-xs max-w-[80mm] mx-auto">
     <div class="text-center border-b pb-2 mb-2">
         <h2 class="text-lg font-bold">مطعم عجيبه - البدرشين</h2>
@@ -2737,7 +2745,7 @@ function closeAdminDashboard() {
 }
 
 function switchAdminSubTab(tab) {
-    const tabs = ['orders', 'menu', 'blacklist', 'status', 'loyalty', 'delivery-times', 'analytics'];
+    const tabs = ['orders', 'menu'];
     tabs.forEach(t => {
         const btn = document.getElementById(`admin-tab-${t}`);
         const view = document.getElementById(`admin-view-${t}`);
@@ -2746,12 +2754,91 @@ function switchAdminSubTab(tab) {
     });
 
     if (tab === 'menu') renderAdminMenuManagement();
-    if (tab === 'blacklist') renderBlacklistManagement();
-    if (tab === 'status') renderStoreStatusManagement();
-    if (tab === 'loyalty') renderLoyaltyManagement();
-    if (tab === 'delivery-times') renderDeliveryTimesManagement();
-    if (tab === 'analytics') renderAnalyticsCharts();
 }
+
+// ===================== قائمة "المزيد" + الصفحة الكاملة =====================
+const ADMIN_MORE_SECTIONS = {
+    'blacklist': { elId: 'admin-view-blacklist', title: '🚫 القائمة السوداء (المحظورين)', render: renderBlacklistManagement },
+    'status': { elId: 'admin-view-status', title: '🕐 حالة المحل', render: renderStoreStatusManagement },
+    'loyalty': { elId: 'admin-view-loyalty', title: '🎁 نقاط الولاء', render: renderLoyaltyManagement },
+    'delivery-times': { elId: 'admin-view-delivery-times', title: '🛵 أوقات التوصيل', render: renderDeliveryTimesManagement },
+    'analytics': { elId: 'admin-view-analytics', title: '📊 التحليلات', render: renderAnalyticsCharts }
+};
+
+let adminMoreMovedEl = null;
+let adminMoreOriginalParent = null;
+let adminMorePlaceholder = null;
+
+function toggleAdminMoreMenu() {
+    document.getElementById('admin-more-dropdown').classList.toggle('hidden');
+}
+function closeAdminMoreMenu() {
+    document.getElementById('admin-more-dropdown').classList.add('hidden');
+}
+// إقفال قائمة "المزيد" لو ضغط العميل بره القائمة
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('admin-more-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) return;
+    if (!dropdown.contains(e.target) && !e.target.closest('[onclick="toggleAdminMoreMenu()"]')) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+function openAdminMoreSection(key) {
+    closeAdminMoreMenu();
+    const section = ADMIN_MORE_SECTIONS[key];
+    const el = section ? document.getElementById(section.elId) : null;
+    if (!section || !el) return;
+
+    // نقل القسم فعلياً جوه الصفحة الكاملة (بدون ما نفقد أي عناصر أو رسوم بيانية جواه)
+    adminMoreMovedEl = el;
+    adminMoreOriginalParent = el.parentNode;
+    adminMorePlaceholder = document.createComment('admin-more-placeholder-' + key);
+    adminMoreOriginalParent.insertBefore(adminMorePlaceholder, el);
+
+    document.getElementById('admin-more-title').innerText = section.title;
+    document.getElementById('admin-more-content').appendChild(el);
+    el.classList.remove('hidden');
+    document.getElementById('admin-more-overlay').classList.remove('hidden');
+
+    // تسجيل حالة في تاريخ المتصفح عشان زرار الرجوع (Back) يقفل الصفحة بدل ما يسيب الموقع
+    history.pushState({ adminMoreOpen: true }, '');
+
+    section.render();
+}
+
+function closeAdminMoreSection(fromPopState) {
+    const overlay = document.getElementById('admin-more-overlay');
+    if (overlay.classList.contains('hidden')) return;
+
+    overlay.classList.add('hidden');
+
+    if (adminMoreMovedEl && adminMoreOriginalParent) {
+        adminMoreOriginalParent.insertBefore(adminMoreMovedEl, adminMorePlaceholder);
+        adminMorePlaceholder.remove();
+        adminMoreMovedEl.classList.add('hidden');
+    }
+    adminMoreMovedEl = null;
+    adminMoreOriginalParent = null;
+    adminMorePlaceholder = null;
+
+    // لو القفل جه من زرار "رجوع" جوه الصفحة (مش من زرار المتصفح نفسه)، نمسح الحالة المسجلة في التاريخ
+    if (!fromPopState && history.state && history.state.adminMoreOpen) {
+        history.back();
+    }
+}
+
+// دعم زرار "رجوع" في المتصفح/الموبايل
+window.addEventListener('popstate', function() {
+    closeAdminMoreSection(true);
+});
+
+// دعم زرار Escape في الكيبورد
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAdminMoreSection();
+    }
+});
 
 // متغيرات لحفظ نسخ الرسوم البيانية عشان نقدر نمسحها ونعيد رسمها بدون تكرار
 let chartTopItemsInstance = null;
