@@ -43,7 +43,14 @@
 /* =========================================================
    تأثيرات الفخامة والـ 3D الخاصة بمطعم عجيبة الفاخر
    ========================================================= */
-
+/* أنيميشن فتح قائمة "المزيد" في شريط الموبايل السفلي */
+@keyframes slideUpMenu {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+.mobile-nav-btn.active-mobile-tab {
+    color: #58081A !important;
+}
 /* 1. خلفيات متدرجة فاخرة مع إضاءة ذهبية */
 body {
     background-color: #0d0f12;
@@ -457,8 +464,7 @@ body.pos-mode-active footer { display: none !important; }
 
     
 </head>
-<body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark">
-
+<body class="bg-brand-bg min-h-screen flex flex-col justify-between selection:bg-brand-gold selection:text-brand-dark pb-20 md:pb-0">
     <!-- شاشة إغلاق المطعم بالكامل (تمنع أي تفاعل مع الموقع أثناء الإغلاق) -->
     <div id="store-closed-overlay" class="hidden fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center p-6" style="perspective: 1200px;">
         <div class="absolute inset-0 store-closed-bg"></div>
@@ -1891,6 +1897,47 @@ function addOfferToCart(offerId, title, price, image, description) {
         function updateCartBadge() {
             const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('cart-badge').innerText = totalCount;
+            const mobileBadge = document.getElementById('mobile-nav-cart-badge');
+            if (mobileBadge) mobileBadge.innerText = totalCount;
+        }
+
+        // ===================== شريط التنقل السفلي للموبايل =====================
+        function setActiveMobileTab(activeId) {
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('active-mobile-tab', 'text-brand-dark');
+                btn.classList.add('text-gray-500');
+            });
+            const activeBtn = document.getElementById(activeId);
+            if (activeBtn) {
+                activeBtn.classList.add('active-mobile-tab', 'text-brand-dark');
+                activeBtn.classList.remove('text-gray-500');
+            }
+        }
+
+        function mobileNavGoHome() {
+            setActiveMobileTab('mobile-nav-home');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function mobileNavGoMenu() {
+            setActiveMobileTab('mobile-nav-menu-btn');
+            const target = document.getElementById('menu-section');
+            if (target) target.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function mobileNavGoCart() {
+            setActiveMobileTab('mobile-nav-cart-btn');
+            toggleCartModal();
+        }
+
+        function openMobileMoreMenu() {
+            setActiveMobileTab('mobile-nav-more-btn');
+            document.getElementById('mobile-more-menu').classList.remove('hidden');
+        }
+
+        function closeMobileMoreMenu() {
+            document.getElementById('mobile-more-menu').classList.add('hidden');
+            setActiveMobileTab('mobile-nav-home');
         }
 
         function renderCartItems() {
@@ -4751,7 +4798,9 @@ function submitPosOrder() {
 <!-- Floating WhatsApp Button -->
 <a href="https://wa.me/201142400434?text=%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D8%B9%D8%A7%D9%8A%D8%B2%20%D8%A7%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D8%B9%D8%AC%D9%8A%D8%A9" 
    target="_blank" 
-   class="fixed bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95">
+   class="fixed bottom-24 md:bottom-6 left-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all transform hover:scale-110 active:scale-95">
+   
+    
     <i class="fa-brands fa-whatsapp text-3xl"></i>
 </a>
     <!-- نافذة الطلب السريع (الكاونتر) -->
@@ -4770,6 +4819,52 @@ function submitPosOrder() {
             <iframe id="pos-iframe" src="about:blank" class="w-full h-full border-0"></iframe>
         </div>
     </div>
-</div>
+    <!-- MOBILE BOTTOM NAVIGATION BAR (زي شريط اريج تماماً) -->
+    <nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.06)]">
+        <div class="grid grid-cols-4">
+            <button onclick="mobileNavGoHome()" id="mobile-nav-home" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 py-2.5 text-brand-dark">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[11px] font-bold">الرئيسية</span>
+            </button>
+            <button onclick="mobileNavGoMenu()" id="mobile-nav-menu-btn" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 py-2.5 text-gray-500">
+                <i class="fa-solid fa-utensils text-lg"></i>
+                <span class="text-[11px] font-bold">المنيو</span>
+            </button>
+            <button onclick="mobileNavGoCart()" id="mobile-nav-cart-btn" class="mobile-nav-btn relative flex flex-col items-center justify-center gap-1 py-2.5 text-gray-500">
+                <div class="relative">
+                    <i class="fa-solid fa-bag-shopping text-lg"></i>
+                    <span id="mobile-nav-cart-badge" class="absolute -top-2 -right-2.5 bg-brand-gold text-brand-dark font-extrabold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                </div>
+                <span class="text-[11px] font-bold">السلة</span>
+            </button>
+            <button onclick="openMobileMoreMenu()" id="mobile-nav-more-btn" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 py-2.5 text-gray-500">
+                <i class="fa-solid fa-bars text-lg"></i>
+                <span class="text-[11px] font-bold">المزيد</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MOBILE MORE MENU DRAWER (بيطلع من تحت فيه باقي الروابط) -->
+    <div id="mobile-more-menu" class="md:hidden fixed inset-0 bg-black/50 z-[60] hidden" onclick="if(event.target === this) closeMobileMoreMenu()">
+        <div class="absolute bottom-0 inset-x-0 bg-white rounded-t-3xl shadow-2xl p-2 pb-6 space-y-1 animate-[slideUpMenu_0.25s_ease-out]">
+            <div class="w-10 h-1.5 bg-gray-300 rounded-full mx-auto my-2"></div>
+            <button onclick="closeMobileMoreMenu(); document.getElementById('offers-section').scrollIntoView({behavior:'smooth'});" class="w-full text-right px-5 py-3.5 rounded-xl hover:bg-gray-50 font-bold text-gray-800 flex items-center gap-3">
+                <span class="text-xl">🔥</span> عروض عجيبه
+            </button>
+            <button onclick="closeMobileMoreMenu(); openTrackModal();" class="w-full text-right px-5 py-3.5 rounded-xl hover:bg-gray-50 font-bold text-gray-800 flex items-center gap-3">
+                <span class="text-xl">🔍</span> تتبع طلبك
+            </button>
+            <button onclick="closeMobileMoreMenu(); toggleSearch();" class="w-full text-right px-5 py-3.5 rounded-xl hover:bg-gray-50 font-bold text-gray-800 flex items-center gap-3">
+                <span class="text-xl">🔎</span> البحث في المنيو
+            </button>
+            <button onclick="closeMobileMoreMenu(); document.getElementById('contact-section').scrollIntoView({behavior:'smooth'});" class="w-full text-right px-5 py-3.5 rounded-xl hover:bg-gray-50 font-bold text-gray-800 flex items-center gap-3">
+                <span class="text-xl">📍</span> تواصل معنا
+            </button>
+            <button onclick="closeMobileMoreMenu(); toggleDarkMode();" class="w-full text-right px-5 py-3.5 rounded-xl hover:bg-gray-50 font-bold text-gray-800 flex items-center gap-3">
+                <span class="text-xl">🌙</span> الوضع الليلي / النهاري
+            </button>
+        </div>
+    </div>
+
 </body>
 </html>
