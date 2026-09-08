@@ -966,6 +966,10 @@ body.pos-mode-active footer { display: none !important; }
                 <button id="admin-tab-status" onclick="switchAdminSubTab('status')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
                     🕐 حالة المحل
                 </button>
+                <button id="admin-tab-loyalty" onclick="switchAdminSubTab('loyalty')" class="font-bold text-gray-500 hover:text-brand-dark pb-2 px-2 text-lg">
+                    🎁 نقاط الولاء
+                </button>
+                
                 <button onclick="openPosModal()" class="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg shadow-sm transition mr-auto">
 
                 
@@ -1023,6 +1027,9 @@ body.pos-mode-active footer { display: none !important; }
 
 <!-- قسم التحكم في حالة فتح/غلق الموقع للعملاء -->
 <div id="admin-view-status" class="hidden"></div>
+
+<!-- قسم التحكم في نظام نقاط الولاء -->
+<div id="admin-view-loyalty" class="hidden"></div>
 
 
 
@@ -1264,7 +1271,8 @@ const REAL_AGEEBA_MENU = [
         let adminActiveCategory = 'الكل';
         let currentEditingItem = null;
         let restaurantStatusData = null; // حالة فتح/غلق المحل القادمة من Firebase
-
+        let loyaltySettingsData = null; // إعدادات نظام نقاط الولاء
+        let customersPointsData = {}; // نقاط كل العملاء حسب رقم الهاتف
 window.addEventListener('DOMContentLoaded', () => {
             // Force replace storage with actual official menu data
             localStorage.setItem('ageeba_real_menu', JSON.stringify(REAL_AGEEBA_MENU));
@@ -2540,7 +2548,10 @@ function trackOrder() {
                         <p><strong>العنوان:</strong> ${order.address}</p>
                         <p><strong>الإجمالي:</strong> ${order.total} ج.م</p>
                     </div>
+                    ${renderRatingSectionForOrder(order)}
                 </div>
+
+                
             `).join('')}
         </div>
     `;
@@ -2601,7 +2612,7 @@ function closeAdminDashboard() {
 }
 
 function switchAdminSubTab(tab) {
-    const tabs = ['orders', 'menu', 'blacklist', 'status'];
+    const tabs = ['orders', 'menu', 'blacklist', 'status', 'loyalty'];
     tabs.forEach(t => {
         const btn = document.getElementById(`admin-tab-${t}`);
         const view = document.getElementById(`admin-view-${t}`);
@@ -2612,6 +2623,120 @@ function switchAdminSubTab(tab) {
     if (tab === 'menu') renderAdminMenuManagement();
     if (tab === 'blacklist') renderBlacklistManagement();
     if (tab === 'status') renderStoreStatusManagement();
+    if (tab === 'loyalty') renderLoyaltyManagement();
+}
+
+// ===================== نظام نقاط الولاء (تحكم كامل من الكاشير) =====================
+
+function renderLoyaltyManagement() {
+    const container = document.getElementById('admin-view-loyalty');
+    if (!container) return;
+
+    const settings = loyaltySettingsData || {};
+    const poundsPerPoint = settings.poundsPerPoint || 10;
+    const pointsForReward = settings.pointsForReward || 20;
+    const rewardDescription = settings.rewardDescription || 'خصم 20 جنيه على طلبك القادم';
+
+    const customersList = Object.entries(customersPointsData || {})
+        .map(([phone, data]) => ({ phone, ...data }))
+        .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6 max-w-3xl">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">🎁 إعدادات نظام نقاط الولاء</h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">كل كام جنيه = نقطة واحدة؟</label>
+                    <input type="number" id="loyalty-pounds-per-point" value="${poundsPerPoint}" min="1" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">عدد النقاط المطلوب للمكافأة</label>
+                    <input type="number" id="loyalty-points-needed" value="${pointsForReward}" min="1" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-800">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">وصف المكافأة (يظهر للعميل)</label>
+                <input type="text" id="loyalty-reward-desc" value="${rewardDescription}" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-800" placeholder="مثال: كريب مجاني، خصم 20 جنيه...">
+            </div>
+            <button onclick="saveLoyaltySettings()" class="bg-brand-dark hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-sm">
+                💾 حفظ الإعدادات
+            </button>
+            <p class="text-[11px] text-gray-500 font-bold">النقاط بتتحسب تلقائياً لما تدوس "تم استلام الطلب والدفع" على أي أوردر. مثال بالإعدادات الحالية: كل ${poundsPerPoint} ج.م = نقطة، وكل ${pointsForReward} نقطة = ${rewardDescription}.</p>
+
+            <div class="border-t pt-5 space-y-3">
+                <h4 class="font-bold text-gray-700 text-sm">👥 نقاط العملاء (${customersList.length} عميل)</h4>
+                ${customersList.length === 0 ? `
+                    <p class="text-xs text-gray-400 font-bold text-center py-4">لا يوجد عملاء لديهم نقاط بعد.</p>
+                ` : `
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        ${customersList.map(c => {
+                            const canRedeem = (c.totalPoints || 0) >= pointsForReward;
+                            return `
+                            <div class="flex flex-wrap justify-between items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200 text-sm">
+                                <div>
+                                    <span class="font-bold text-gray-900">${c.name || 'عميل'}</span>
+                                    <span class="text-gray-500 text-xs block" dir="ltr">${c.phone}</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-black ${canRedeem ? 'text-green-600' : 'text-brand-dark'} text-sm">${c.totalPoints || 0} نقطة</span>
+                                    ${canRedeem ? `<button onclick="redeemCustomerPoints('${c.phone}', ${pointsForReward})" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px]">🎁 صرف المكافأة</button>` : ''}
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function saveLoyaltySettings() {
+    const poundsPerPoint = parseFloat(document.getElementById('loyalty-pounds-per-point').value) || 10;
+    const pointsForReward = parseFloat(document.getElementById('loyalty-points-needed').value) || 20;
+    const rewardDescription = document.getElementById('loyalty-reward-desc').value.trim() || 'خصم على طلبك القادم';
+
+    database.ref('loyaltySettings').set({
+        poundsPerPoint, pointsForReward, rewardDescription
+    }).then(() => {
+        alert('تم حفظ إعدادات نقاط الولاء بنجاح ✅');
+    }).catch(err => {
+        alert('حدث خطأ أثناء الحفظ.');
+        console.error(err);
+    });
+}
+
+// إضافة نقاط لعميل معين بناءً على قيمة الطلب (تُستدعى تلقائياً عند تسليم الطلب)
+function awardLoyaltyPoints(order) {
+    if (!order.phone || order.phone === '-') return;
+
+    const settings = loyaltySettingsData || {};
+    const poundsPerPoint = settings.poundsPerPoint || 10;
+    const earnedPoints = Math.floor((order.total || 0) / poundsPerPoint);
+    if (earnedPoints <= 0) return;
+
+    // استخراج أول رقم هاتف فقط كمفتاح (لأن الحقل ممكن يحتوي رقمين مفصولين بـ /)
+    const primaryPhone = order.phone.split('/')[0].trim().replace(/\D/g, '');
+    if (!primaryPhone) return;
+
+    const existingPoints = (customersPointsData[primaryPhone] && customersPointsData[primaryPhone].totalPoints) || 0;
+
+    database.ref('customersPoints/' + primaryPhone).update({
+        phone: primaryPhone,
+        name: order.customerName || 'عميل',
+        totalPoints: existingPoints + earnedPoints
+    });
+}
+
+// تصفير نقاط عميل بعد صرف المكافأة له
+function redeemCustomerPoints(phone, pointsToDeduct) {
+    if (!confirm('هل تم صرف المكافأة للعميل بالفعل؟ سيتم خصم النقاط الآن.')) return;
+    const current = (customersPointsData[phone] && customersPointsData[phone].totalPoints) || 0;
+    database.ref('customersPoints/' + phone).update({
+        totalPoints: Math.max(0, current - pointsToDeduct)
+    }).then(() => {
+        renderLoyaltyManagement();
+    });
 }
 
 // ===================== نظام التحكم في حالة فتح/غلق الموقع =====================
@@ -2948,6 +3073,66 @@ function renderBlacklistManagement() {
         </div>
     `).join('');
 }
+// عرض قسم التقييم داخل كارت تتبع الطلب (يظهر فقط لو الطلب اتسلم)
+function renderRatingSectionForOrder(order) {
+    if (order.status !== 'DELIVERED') return '';
+
+    if (order.rating) {
+        const starsDisplay = '⭐'.repeat(order.rating) + '☆'.repeat(5 - order.rating);
+        return `
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mt-2 space-y-1">
+                <p class="text-[11px] font-bold text-amber-800">تقييمك للطلب:</p>
+                <p class="text-base">${starsDisplay}</p>
+                ${order.ratingComment ? `<p class="text-[11px] text-gray-600 italic">"${order.ratingComment}"</p>` : ''}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2 space-y-2">
+            <p class="text-[11px] font-bold text-amber-800">قيّم تجربتك معانا 🌟</p>
+            <div id="rating-stars-${order.id}" class="flex gap-1 text-2xl justify-center cursor-pointer" data-selected="0">
+                ${[1,2,3,4,5].map(n => `<span onclick="selectRatingStar('${order.id}', ${n})" data-star="${n}" class="rating-star-${order.id} text-gray-300 transition-colors">★</span>`).join('')}
+            </div>
+            <textarea id="rating-comment-${order.id}" rows="2" placeholder="تعليقك (اختياري)..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-dark"></textarea>
+            <button onclick="submitOrderRating('${order.id}')" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2 rounded-lg text-xs">إرسال التقييم</button>
+        </div>
+    `;
+}
+
+// تحديد عدد النجوم المختارة بصرياً قبل الإرسال
+function selectRatingStar(orderId, starCount) {
+    const container = document.getElementById(`rating-stars-${orderId}`);
+    if (!container) return;
+    container.setAttribute('data-selected', starCount);
+    const stars = container.querySelectorAll(`.rating-star-${orderId}`);
+    stars.forEach(star => {
+        const starNum = parseInt(star.getAttribute('data-star'));
+        star.className = `rating-star-${orderId} transition-colors ${starNum <= starCount ? 'text-amber-400' : 'text-gray-300'}`;
+    });
+}
+
+// إرسال التقييم وحفظه في Firebase
+function submitOrderRating(orderId) {
+    const container = document.getElementById(`rating-stars-${orderId}`);
+    const stars = parseInt(container ? container.getAttribute('data-selected') : 0);
+    if (!stars || stars < 1) {
+        alert('يرجى اختيار عدد النجوم أولاً!');
+        return;
+    }
+    const comment = document.getElementById(`rating-comment-${orderId}`).value.trim();
+
+    database.ref('orders/' + orderId).update({
+        rating: stars,
+        ratingComment: comment || null
+    }).then(() => {
+        alert('شكراً لتقييمك! 🌟');
+        trackOrder();
+    }).catch(err => {
+        alert('حدث خطأ، حاول مرة أخرى.');
+        console.error(err);
+    });
+}
 
         function getStatusArabicLabel(status) {
             switch(status) {
@@ -3044,10 +3229,19 @@ function updateOrderStatus(orderId, newStatus) {
     // 1. إيقاف الصوت والتنبيه الأصفر فوراً
     dismissBanner();
 
+    const updateData = { status: newStatus };
+
+    // منح نقاط الولاء تلقائياً عند التسليم (مرة واحدة فقط لكل طلب)
+    if (newStatus === 'DELIVERED') {
+        const order = orders.find(o => o.id === orderId);
+        if (order && !order.pointsAwarded) {
+            awardLoyaltyPoints(order);
+            updateData.pointsAwarded = true;
+        }
+    }
+
     // 2. تحديث الحالة في قاعدة البيانات السحابية
-    database.ref('orders/' + orderId).update({
-        status: newStatus
-    }).then(() => {
+    database.ref('orders/' + orderId).update(updateData).then(() => {
         renderAdminDashboard();
     }).catch((err) => {
         console.error("Error updating order status:", err);
@@ -3188,6 +3382,22 @@ database.ref('restaurantStatus').on('value', (snapshot) => {
     if (document.getElementById('admin-view-status')) renderStoreStatusManagement();
 });
 setInterval(checkAndApplyRestaurantStatus, 30000); // إعادة فحص كل 30 ثانية لتغطية المواعيد التلقائية
+
+// الاستماع اللحظي لإعدادات نقاط الولاء
+database.ref('loyaltySettings').on('value', (snapshot) => {
+    loyaltySettingsData = snapshot.val() || {};
+    if (document.getElementById('admin-view-loyalty') && !document.getElementById('admin-view-loyalty').classList.contains('hidden')) {
+        renderLoyaltyManagement();
+    }
+});
+
+// الاستماع اللحظي لنقاط العملاء
+database.ref('customersPoints').on('value', (snapshot) => {
+    customersPointsData = snapshot.val() || {};
+    if (document.getElementById('admin-view-loyalty') && !document.getElementById('admin-view-loyalty').classList.contains('hidden')) {
+        renderLoyaltyManagement();
+    }
+});إعادة فحص كل 30 ثانية لتغطية المواعيد التلقائية
 
 // الاستماع المباشر واللحظي للطلبات
 let isFirstLoad = true;
