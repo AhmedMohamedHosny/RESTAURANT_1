@@ -1274,6 +1274,7 @@ window.addEventListener('DOMContentLoaded', () => {
             renderMenuTabs();
             renderMenu();
             loadSavedCustomerInfo();
+            syncDeliveryFeeFromSelectedArea(); // مزامنة سعر التوصيل مع المنطقة المحفوظة/الافتراضية فوراً
             updateCartBadge();
             // فحص ما إذا كان الكاشير داخل اللوحة قبل التحديث
             // وضع الكاونتر (جوه الـ iframe) - يظهر المنيو فقط بدون فتح لوحة الكاشير
@@ -1735,7 +1736,7 @@ function addOfferToCart(title, price, image) {
             const modal = document.getElementById('cart-modal');
             modal.classList.toggle('hidden');
             if (!modal.classList.contains('hidden')) {
-                renderCartItems();
+                syncDeliveryFeeFromSelectedArea();
             }
         }
 
@@ -1884,15 +1885,23 @@ document.getElementById('cart-total').innerText = (subtotal + delivery) + ' ج.�
 let currentDeliveryFee = 15;
 
 function updateDeliveryAreaPrice() {
+    syncDeliveryFeeFromSelectedArea();
+}
+
+// دالة موحّدة تقرأ المنطقة المختارة فعلياً من القائمة وتحدّث سعر التوصيل بناءً عليها
+// (بتتنادى سواء العميل غيّر الاختيار يدوياً، أو عند تحميل بيانات محفوظة، أو عند فتح السلة/الفورم)
+function syncDeliveryFeeFromSelectedArea() {
     const areaSelect = document.getElementById('cust-area');
-    if (areaSelect) {
+    if (areaSelect && areaSelect.selectedIndex >= 0) {
         const selectedOption = areaSelect.options[areaSelect.selectedIndex];
         currentDeliveryFee = parseFloat(selectedOption.getAttribute('data-price') || "15");
-        
-        // تحديث عرض السعر في السلة والمراجعة
-        document.getElementById('cart-delivery-fee').innerText = currentDeliveryFee + ' ج.م';
-        renderCartItems();
+    } else {
+        currentDeliveryFee = 15; // قيمة افتراضية لو مفيش قائمة أو اختيار بعد
     }
+
+    const feeDisplay = document.getElementById('cart-delivery-fee');
+    if (feeDisplay) feeDisplay.innerText = currentDeliveryFee + ' ج.م';
+    renderCartItems();
 }
 
 // حفظ بيانات العميل تلقائياً في المتصفح مثل موقع اسبايسي
