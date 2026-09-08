@@ -393,7 +393,11 @@ body.pos-mode-active footer { display: none !important; }
 /* =========================================================
    شاشة إغلاق المطعم الكاملة (Store Closed Overlay) - تصميم 3D فاخر
    ========================================================= */
-#store-closed-overlay .store-closed-bg {
+#store-closed-overlay {
+    touch-action: none !important;
+    overscroll-behavior: none !important;
+}
+#store-closed-overlay .store-closed-bg {    
     background: radial-gradient(circle at 50% 20%, rgba(212,175,55,0.15) 0%, transparent 55%),
                 linear-gradient(160deg, #2b0410 0%, #58081A 35%, #1a0308 100%);
 }
@@ -2653,8 +2657,17 @@ function checkAndApplyRestaurantStatus() {
         overlay.classList.remove('hidden');
         const timeDisplay = document.getElementById('store-reopen-time-display');
         if (timeDisplay) timeDisplay.innerText = formatTimeToArabic12h(status.reopenTimeDisplay);
+
+        // منع أي تمرير (سكرول) في الموقع تماماً أثناء الإغلاق
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100vh';
+        window.scrollTo(0, 0);
     } else {
         overlay.classList.add('hidden');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.height = '';
     }
 }
 
