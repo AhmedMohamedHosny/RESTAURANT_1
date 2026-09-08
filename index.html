@@ -895,6 +895,8 @@ body.pos-mode-active footer { display: none !important; }
                         <button onclick="openAdminMoreSection('status')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🕐 حالة المحل</button>
                         <button onclick="openAdminMoreSection('delivery-times')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🛵 أوقات التوصيل</button>
                         <button onclick="openAdminMoreSection('analytics')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">📊 التحليلات</button>
+                        <button onclick="openAdminMoreSection('offers')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🔥 إدارة العروض</button>                
+                    
                     </div>
                 </div>
                 <button onclick="toggleAdminDarkMode()" class="p-2.5 rounded-full text-amber-300 hover:bg-white/10 transition-colors" title="تغيير الوضع الليلي/النهاري">
@@ -1011,8 +1013,13 @@ body.pos-mode-active footer { display: none !important; }
 <!-- قسم التحكم في أوقات التوصيل المتوقعة لكل منطقة -->
 <div id="admin-view-delivery-times" class="hidden"></div>
 
+<!-- قسم إدارة العروض -->
+<div id="admin-view-offers" class="hidden"></div>
+
 <!-- قسم التحليلات البصرية بالرسوم البيانية -->
 <div id="admin-view-analytics" class="hidden space-y-6">
+
+    
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
             <h4 class="font-bold text-gray-800 mb-3 text-sm">🏆 أعلى 8 أصناف مبيعاً (بالكمية)</h4>
@@ -1268,11 +1275,13 @@ const REAL_AGEEBA_MENU = [
 }));
 
         // OFFERS
-        const OFFERS_DATA = [
-            { title: "قنبلة ميكس عجيبه الجبارة + باكيت بطاطس هدية", oldPrice: 190, newPrice: 155, image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80" },
-            { title: "بيتزا تشيكن رانش Large + كانز كوكاكولا", oldPrice: 200, newPrice: 180, image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" },
-            { title: "كريب اف 16 VIP + كريب شوكليت حلو", oldPrice: 175, newPrice: 150, image: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" }
-        ];
+        // العروض الافتراضية (بتتزرع في Firebase مرة واحدة بس لو مفيش عروض محفوظة أصلاً)
+        const DEFAULT_OFFERS = {
+            'offer1': { title: "قنبلة ميكس عجيبه الجبارة + باكيت بطاطس هدية", description: "", oldPrice: 190, newPrice: 155, image: "" },
+            'offer2': { title: "بيتزا تشيكن رانش Large + كانز كوكاكولا", description: "", oldPrice: 200, newPrice: 180, image: "" },
+            'offer3': { title: "كريب اف 16 VIP + كريب شوكليت حلو", description: "", oldPrice: 175, newPrice: 150, image: "" }
+        };
+        let offersData = {}; // بيانات العروض الحقيقية القادمة من Firebase
 
         // App State Variables
         let menuItems = JSON.parse(localStorage.getItem('ageeba_real_menu')) || REAL_AGEEBA_MENU;
@@ -1369,23 +1378,33 @@ const REAL_AGEEBA_MENU = [
 
         function renderOffers() {
             const container = document.getElementById('offers-container');
-            container.innerHTML = OFFERS_DATA.map(offer => `
+            const offersToShow = Object.keys(offersData).length > 0 ? offersData : DEFAULT_OFFERS;
+            const offersList = Object.entries(offersToShow);
+
+            if (offersList.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-center py-8 text-gray-500 font-bold">لا توجد عروض متاحة حالياً</p>`;
+                return;
+            }
+
+            container.innerHTML = offersList.map(([offerId, offer]) => {
+                const imageUrl = offer.image && offer.image.trim() ? offer.image : generateFoodCardSVG(offer.title, 'عرض خاص');
+                return `
                 <div class="bg-white rounded-2xl border border-amber-200 overflow-hidden shadow-sm flex flex-col justify-between">
-                    <img src="${offer.image}" alt="${offer.title}" class="w-full h-44 object-cover">
+                    <img src="${imageUrl}" alt="${offer.title}" class="w-full h-44 object-cover">
                     <div class="p-5 space-y-3">
                         <span class="bg-red-100 text-red-700 text-xs font-black px-2.5 py-1 rounded-md">عرض خاص مميز</span>
                         <h4 class="font-black text-gray-900 text-base">${offer.title}</h4>
+                        ${offer.description && offer.description.trim() ? `<p class="text-xs text-gray-500 leading-relaxed">${offer.description}</p>` : ''}
                         <div class="flex items-center gap-3">
                             <span class="text-2xl font-black text-brand-dark">${offer.newPrice} ج.م</span>
-                            <span class="text-sm text-gray-400 line-through font-bold">${offer.oldPrice} ج.م</span>
+                            ${offer.oldPrice ? `<span class="text-sm text-gray-400 line-through font-bold">${offer.oldPrice} ج.م</span>` : ''}
                         </div>
-<button onclick="addOfferToCart('${offer.title.replace(/'/g, "\\'")}', ${offer.newPrice}, '${offer.image}')" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">
-    اطلب العرض الآن 🔥
-</button>
-                        
+                        <button onclick='addOfferToCart(${JSON.stringify(offerId)}, ${JSON.stringify(offer.title)}, ${offer.newPrice}, ${JSON.stringify(imageUrl)}, ${JSON.stringify(offer.description || "")})' class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+                            اطلب العرض الآن 🔥
+                        </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function renderMenuTabs() {
@@ -1726,14 +1745,14 @@ function confirmAddToCart() {
                 setTimeout(() => cartBtn.classList.remove('cart-shake'), 500);
             }
         }
-function addOfferToCart(title, price, image) {
+function addOfferToCart(offerId, title, price, image, description) {
     // فتح شاشة تحديد الكمية للعرض بنفس أسلوب أصناف المنيو
     currentEditingItem = { 
         id: 'offer-' + Date.now(),
         name: title, 
-        description: 'عرض خاص مميز من مطعم عجيبة.',
+        description: description && description.trim() ? description : 'عرض خاص مميز من مطعم عجيبة.',
         price: price,
-        image: image || "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80",
+        image: image,
         selectedSize: "عرض خاص", 
         selectedExtras: [], 
         quantity: 1,
@@ -2754,6 +2773,126 @@ function openAdminAuth() {
         alert("كلمة المرور غير صحيحة!");
     }
 }
+        // ===================== إدارة العروض =====================
+function renderOffersManagement() {
+    const container = document.getElementById('admin-view-offers');
+    if (!container) return;
+
+    const offersToShow = Object.keys(offersData).length > 0 ? offersData : DEFAULT_OFFERS;
+    const offersList = Object.entries(offersToShow);
+
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6 max-w-3xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800">🔥 إدارة عروض الموقع</h3>
+                <button onclick="promptAddNewOffer()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-md">+ إضافة عرض جديد</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                ${offersList.length === 0 ? `
+                    <p class="col-span-full text-center py-8 text-gray-400 font-bold text-sm">لا توجد عروض حالياً، ضيف أول عرض من الزرار فوق.</p>
+                ` : offersList.map(([offerId, offer]) => {
+                    const imageUrl = offer.image && offer.image.trim() ? offer.image : generateFoodCardSVG(offer.title, 'عرض خاص');
+                    return `
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
+                        <img src="${imageUrl}" class="w-full h-32 rounded-lg object-cover border">
+                        <h5 class="font-bold text-sm text-gray-900">${offer.title}</h5>
+                        ${offer.description ? `<p class="text-xs text-gray-500">${offer.description}</p>` : ''}
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="font-black text-brand-dark">${offer.newPrice} ج.م</span>
+                            ${offer.oldPrice ? `<span class="text-gray-400 line-through">${offer.oldPrice} ج.م</span>` : ''}
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="promptEditOffer('${offerId}')" class="flex-grow bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1.5 rounded-lg text-xs">✏️ تعديل</button>
+                            <button onclick="deleteOffer('${offerId}')" class="flex-grow bg-red-100 hover:bg-red-200 text-red-700 font-bold py-1.5 rounded-lg text-xs">🗑️ حذف</button>
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// إضافة عرض جديد (الاسم والسعرين إجباريين، الوصف والصورة اختياريين)
+function promptAddNewOffer() {
+    const title = prompt("اسم العرض:");
+    if (!title || !title.trim()) return;
+
+    const description = prompt("مكونات العرض / وصف مختصر (اختياري - اضغط إلغاء أو اتركه فارغ للتخطي):") || "";
+
+    const oldPriceInput = prompt("السعر قبل الخصم (اختياري - اتركه فارغ لو مفيش سعر أصلي):");
+    const oldPrice = oldPriceInput && !isNaN(oldPriceInput) ? parseFloat(oldPriceInput) : null;
+
+    const newPriceInput = prompt("السعر بعد الخصم (إجباري):");
+    if (!newPriceInput || isNaN(newPriceInput) || parseFloat(newPriceInput) <= 0) {
+        alert("يجب إدخال سعر صحيح بعد الخصم!");
+        return;
+    }
+    const newPrice = parseFloat(newPriceInput);
+
+    const image = prompt("رابط صورة العرض (اختياري - اتركه فارغ وهيتحط شكل افتراضي بدلاً منه):") || "";
+
+    const newOfferId = 'offer' + Date.now();
+    database.ref('offers/' + newOfferId).set({
+        title: title.trim(),
+        description: description.trim(),
+        oldPrice: oldPrice,
+        newPrice: newPrice,
+        image: image.trim()
+    }).then(() => {
+        renderOffersManagement();
+    }).catch(err => {
+        alert('حدث خطأ أثناء إضافة العرض.');
+        console.error(err);
+    });
+}
+
+// تعديل عرض موجود
+function promptEditOffer(offerId) {
+    const offersToShow = Object.keys(offersData).length > 0 ? offersData : DEFAULT_OFFERS;
+    const offer = offersToShow[offerId];
+    if (!offer) return;
+
+    const title = prompt("اسم العرض:", offer.title);
+    if (!title || !title.trim()) return;
+
+    const description = prompt("مكونات العرض / وصف مختصر (اختياري):", offer.description || "") || "";
+
+    const oldPriceInput = prompt("السعر قبل الخصم (اختياري - اتركه فارغ لو مفيش):", offer.oldPrice || "");
+    const oldPrice = oldPriceInput && !isNaN(oldPriceInput) ? parseFloat(oldPriceInput) : null;
+
+    const newPriceInput = prompt("السعر بعد الخصم (إجباري):", offer.newPrice);
+    if (!newPriceInput || isNaN(newPriceInput) || parseFloat(newPriceInput) <= 0) {
+        alert("يجب إدخال سعر صحيح بعد الخصم!");
+        return;
+    }
+    const newPrice = parseFloat(newPriceInput);
+
+    const image = prompt("رابط صورة العرض (اختياري):", offer.image || "") || "";
+
+    database.ref('offers/' + offerId).set({
+        title: title.trim(),
+        description: description.trim(),
+        oldPrice: oldPrice,
+        newPrice: newPrice,
+        image: image.trim()
+    }).then(() => {
+        renderOffersManagement();
+    }).catch(err => {
+        alert('حدث خطأ أثناء التعديل.');
+        console.error(err);
+    });
+}
+
+// حذف عرض نهائياً
+function deleteOffer(offerId) {
+    if (!confirm('هل أنت متأكد من حذف هذا العرض نهائياً؟')) return;
+    database.ref('offers/' + offerId).remove().then(() => {
+        renderOffersManagement();
+    }).catch(err => {
+        alert('حدث خطأ أثناء الحذف.');
+        console.error(err);
+    });
+}
         
 function getFormattedArabicDate(dateObj) {
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -2795,7 +2934,8 @@ const ADMIN_MORE_SECTIONS = {
     'blacklist': { elId: 'admin-view-blacklist', title: '🚫 القائمة السوداء (المحظورين)', render: renderBlacklistManagement },
     'status': { elId: 'admin-view-status', title: '🕐 حالة المحل', render: renderStoreStatusManagement },
     'delivery-times': { elId: 'admin-view-delivery-times', title: '🛵 أوقات التوصيل', render: renderDeliveryTimesManagement },
-    'analytics': { elId: 'admin-view-analytics', title: '📊 التحليلات', render: renderAnalyticsCharts }
+    'analytics': { elId: 'admin-view-analytics', title: '📊 التحليلات', render: renderAnalyticsCharts },
+    'offers': { elId: 'admin-view-offers', title: '🔥 إدارة العروض', render: renderOffersManagement }
 };
 
 let adminMoreMovedEl = null;
@@ -3883,8 +4023,27 @@ setInterval(checkAndApplyRestaurantStatus, 30000); // إعادة فحص كل 30 
 
 
 
+// الاستماع اللحظي لبيانات العروض
+database.ref('offers').on('value', (snapshot) => {
+    const dataFromFirebase = snapshot.val();
+
+    if (!dataFromFirebase) {
+        database.ref('offers').set(DEFAULT_OFFERS);
+        offersData = DEFAULT_OFFERS;
+    } else {
+        offersData = dataFromFirebase;
+    }
+
+    renderOffers();
+
+    if (document.getElementById('admin-view-offers') && !document.getElementById('admin-view-offers').classList.contains('hidden')) {
+        renderOffersManagement();
+    }
+});
+
 // الاستماع اللحظي لبيانات مناطق التوصيل (الأسعار والأوقات)
 database.ref('deliveryAreas').on('value', (snapshot) => {
+    
     const dataFromFirebase = snapshot.val();
 
     // أول مرة الموقع يشتغل ومفيش بيانات محفوظة، نزرع القيم الافتراضية مرة واحدة بس
