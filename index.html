@@ -784,19 +784,9 @@ body.pos-mode-active footer { display: none !important; }
         <label class="block text-xs font-bold text-gray-700 mb-1">اختر منطقة التوصيل *</label>
         <select id="cust-area" onchange="updateDeliveryAreaPrice()" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:border-brand-dark focus:outline-none bg-white font-bold text-gray-800">
             <option value="" data-price="15">-- اختر المنطقة --</option>
-            <option value="البدرشين (حول المحل)" data-price="10">البدرشين (حول المحل) - 10 ج.م</option>
-            <option value="البدرشين" data-price="15">البدرشين - 15 ج.م</option>
-            <option value="الشورى والجعفري" data-price="15">الشورى والجعفري - 15 ج.م</option>
-            <option value="العزبة الشرقية والغربية" data-price="15">العزبة الشرقية والغربية - 15 ج.م</option>
-            <option value="كوبري الري ومصنع الشاي" data-price="15">كوبري الري ومصنع الشاي - 15 ج.م</option>
-            <option value="الطرفاية وميت رهينة" data-price="30">الطرفاية وميت رهينة - 30 ج.م</option>
-            <option value="الحوامدية والشنباب" data-price="35">الحوامدية والشنباب - 35 ج.م</option>
-            <option value="العزيزية والمرازيق" data-price="40">العزيزية والمرازيق - 40 ج.م</option>
-            <option value="سقارة وأبوصير" data-price="50">سقارة وأبوصير - 50 ج.م</option>
-            <option value="الشوبك ومزغونة" data-price="70">الشوبك ومزغونة - 70 ج.م</option>
-            <option value="دهشور وشبرامنت" data-price="100">دهشور وشبرامنت - 100 ج.م</option>
-            <option value="منطقة أخرى" data-price="20">منطقة أخرى (حسب الاتفاق)</option>
         </select>
+
+        
     </div>
     <div>
         <label class="block text-xs font-bold text-gray-700 mb-1">العنوان بالتفصيل (الشارع / رقم العمارة / الدور) *</label>
@@ -903,7 +893,6 @@ body.pos-mode-active footer { display: none !important; }
                     <div id="admin-more-dropdown" class="hidden absolute left-0 mt-2 w-60 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden text-right">
                         <button onclick="openAdminMoreSection('blacklist')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">🚫 القائمة السوداء (المحظورين)</button>
                         <button onclick="openAdminMoreSection('status')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🕐 حالة المحل</button>
-                        <button onclick="openAdminMoreSection('loyalty')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🎁 نقاط الولاء</button>
                         <button onclick="openAdminMoreSection('delivery-times')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">🛵 أوقات التوصيل</button>
                         <button onclick="openAdminMoreSection('analytics')" class="w-full text-right px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 border-t">📊 التحليلات</button>
                     </div>
@@ -1017,8 +1006,7 @@ body.pos-mode-active footer { display: none !important; }
 <!-- قسم التحكم في حالة فتح/غلق الموقع للعملاء -->
 <div id="admin-view-status" class="hidden"></div>
 
-<!-- قسم التحكم في نظام نقاط الولاء -->
-<div id="admin-view-loyalty" class="hidden"></div>
+
 
 <!-- قسم التحكم في أوقات التوصيل المتوقعة لكل منطقة -->
 <div id="admin-view-delivery-times" class="hidden"></div>
@@ -1294,9 +1282,23 @@ const REAL_AGEEBA_MENU = [
         let adminActiveCategory = 'الكل';
         let currentEditingItem = null;
         let restaurantStatusData = null; // حالة فتح/غلق المحل القادمة من Firebase
-        let loyaltySettingsData = null; // إعدادات نظام نقاط الولاء
-        let customersPointsData = {}; // نقاط كل العملاء حسب رقم الهاتف
-        let deliveryAreaTimesData = {}; // أوقات التوصيل التقريبية لكل منطقة (تتحكم فيها الكاشير)
+        // القيم الافتراضية اللي بتتزرع في Firebase أول مرة بس، لو الموقع مبدأ من الصفر
+        const DEFAULT_DELIVERY_AREAS = {
+            'البدرشين (حول المحل)': { price: 10, time: 20 },
+            'البدرشين': { price: 15, time: 30 },
+            'الشورى والجعفري': { price: 15, time: 30 },
+            'العزبة الشرقية والغربية': { price: 15, time: 30 },
+            'كوبري الري ومصنع الشاي': { price: 15, time: 30 },
+            'الطرفاية وميت رهينة': { price: 30, time: 40 },
+            'الحوامدية والشنباب': { price: 35, time: 40 },
+            'العزيزية والمرازيق': { price: 40, time: 45 },
+            'سقارة وأبوصير': { price: 50, time: 50 },
+            'الشوبك ومزغونة': { price: 70, time: 60 },
+            'دهشور وشبرامنت': { price: 100, time: 70 },
+            'منطقة أخرى': { price: 20, time: 45 }
+        };
+        let deliveryAreasData = {}; // بيانات كل منطقة توصيل (السعر + الوقت) - قادمة من Firebase مباشرة       
+        
         let trackedOrderIdsStatusMap = {}; // لتتبع تغيّر حالة الطلبات اللي العميل بيتابعها وإشعاره
         let originalPageTitle = document.title;
         let titleFlashInterval = null;
@@ -1309,10 +1311,10 @@ const REAL_AGEEBA_MENU = [
             renderOffers();
             renderMenuTabs();
             renderMenu();
+            renderAreaDropdownOptions(); // تعبئة قائمة المناطق فوراً بقيم مبدئية لحد ما تجيب بيانات Firebase
             loadSavedCustomerInfo();
             syncDeliveryFeeFromSelectedArea(); // مزامنة سعر التوصيل مع المنطقة المحفوظة/الافتراضية فوراً
             updateCartBadge();
-            // فحص ما إذا كان الكاشير داخل اللوحة قبل التحديث
             // وضع الكاونتر (جوه الـ iframe) - يظهر المنيو فقط بدون فتح لوحة الكاشير
             const isPosMode = new URLSearchParams(window.location.search).get('pos_mode') === '1';
             if (isPosMode) {
@@ -1969,7 +1971,25 @@ document.getElementById('cart-total').innerText = (subtotal + delivery) + ' ج.�
         function closeCheckoutModal() {
             document.getElementById('checkout-modal').classList.add('hidden');
         }
+        // بناء قائمة المناطق في فورم الطلب من بيانات Firebase مباشرة
+        function renderAreaDropdownOptions() {
+            const select = document.getElementById('cust-area');
+            if (!select) return;
 
+            const dataToUse = Object.keys(deliveryAreasData).length > 0 ? deliveryAreasData : DEFAULT_DELIVERY_AREAS;
+            const previouslySelected = select.value;
+
+            select.innerHTML = `<option value="" data-price="15">-- اختر المنطقة --</option>` +
+                Object.entries(dataToUse).map(([areaName, info]) => `
+                    <option value="${areaName}" data-price="${info.price}">${areaName} - ${info.price} ج.م</option>
+                `).join('');
+
+            if (previouslySelected && dataToUse[previouslySelected]) {
+                select.value = previouslySelected;
+            }
+
+            syncDeliveryFeeFromSelectedArea();
+        }
         function toggleAddressField(isDelivery) {
             const container = document.getElementById('address-container');
             const input = document.getElementById('cust-address');
@@ -2010,8 +2030,8 @@ function syncDeliveryFeeFromSelectedArea() {
     // عرض الوقت المتوقع للتوصيل لو المنطقة محددة
     const estimatedTimeDisplay = document.getElementById('cart-delivery-time-estimate');
     if (estimatedTimeDisplay) {
-        const minutes = selectedAreaName && deliveryAreaTimesData[selectedAreaName] ? deliveryAreaTimesData[selectedAreaName] : null;
-        estimatedTimeDisplay.innerText = minutes ? `⏱️ خلال ${minutes} دقيقة تقريباً` : '';
+        const areaInfo = selectedAreaName ? deliveryAreasData[selectedAreaName] : null;
+        estimatedTimeDisplay.innerText = areaInfo && areaInfo.time ? `⏱️ خلال ${areaInfo.time} دقيقة تقريباً` : '';
     }
 
     renderCartItems();
@@ -2635,37 +2655,7 @@ function renderCustomerReviews() {
     `).join('');
 }
 // عرض حالة نقاط الولاء للعميل في صفحة تتبع الطلب
-function renderCustomerLoyaltyStatus(phoneRaw) {
-    if (!phoneRaw) return '';
-    const primaryPhone = phoneRaw.split('/')[0].trim().replace(/\D/g, '');
-    const settings = loyaltySettingsData || {};
-    const pointsForReward = settings.pointsForReward || 20;
-    const rewardDescription = settings.rewardDescription || 'خصم على طلبك القادم';
-    const poundsPerPoint = settings.poundsPerPoint || 10;
-    const customerData = (customersPointsData && customersPointsData[primaryPhone]) || {};
-    const currentPoints = customerData.totalPoints || 0;
-    const canRedeem = currentPoints >= pointsForReward;
-    const remaining = Math.max(0, pointsForReward - currentPoints);
-    const progressPercent = Math.min(100, Math.round((currentPoints / pointsForReward) * 100));
 
-    return `
-        <div class="bg-gradient-to-l from-amber-50 to-amber-100 border border-amber-300 rounded-2xl p-4 mb-4 space-y-2">
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-black text-amber-900">🎁 نقاط الولاء بتاعتك</span>
-                <span class="text-lg font-black text-brand-dark">${currentPoints} نقطة</span>
-            </div>
-            <div class="w-full bg-white/70 rounded-full h-2.5 overflow-hidden">
-                <div class="h-full bg-amber-500" style="width:${progressPercent}%"></div>
-            </div>
-            ${canRedeem ? `
-                <p class="text-xs font-bold text-green-700">🎉 مبروك! تقدر تستلم: ${rewardDescription} — قول للكاشير عند الطلب الجاي.</p>
-            ` : `
-                <p class="text-xs font-bold text-amber-800">باقيلك ${remaining} نقطة عشان تحصل على: ${rewardDescription}</p>
-            `}
-            <p class="text-[10px] text-gray-500 font-bold">بتكسب نقطة واحدة كل ${poundsPerPoint} ج.م في طلباتك المُسلَّمة.</p>
-        </div>
-    `;
-}
 function trackOrder() {
     requestNotificationPermissionIfNeeded();
     const inputVal = document.getElementById('track-input-id').value.trim();
@@ -2699,7 +2689,6 @@ function trackOrder() {
 
     resultDiv.classList.remove('hidden');
     timelineContainer.innerHTML = `
-        ${renderCustomerLoyaltyStatus(userOrders[0].phone)}
         <h4 class="font-bold text-gray-800 text-sm mb-3 border-b pb-2">سجل طلباتك (${userOrders.length} طلب):</h4>
         
         <div class="space-y-4 max-h-80 overflow-y-auto pl-1">
@@ -2805,7 +2794,6 @@ function switchAdminSubTab(tab) {
 const ADMIN_MORE_SECTIONS = {
     'blacklist': { elId: 'admin-view-blacklist', title: '🚫 القائمة السوداء (المحظورين)', render: renderBlacklistManagement },
     'status': { elId: 'admin-view-status', title: '🕐 حالة المحل', render: renderStoreStatusManagement },
-    'loyalty': { elId: 'admin-view-loyalty', title: '🎁 نقاط الولاء', render: renderLoyaltyManagement },
     'delivery-times': { elId: 'admin-view-delivery-times', title: '🛵 أوقات التوصيل', render: renderDeliveryTimesManagement },
     'analytics': { elId: 'admin-view-analytics', title: '📊 التحليلات', render: renderAnalyticsCharts }
 };
@@ -2889,7 +2877,12 @@ document.addEventListener('keydown', function(e) {
 let chartTopItemsInstance = null;
 let chartPeakHoursInstance = null;
 let chartDailySalesInstance = null;
-
+// تحويل الأرقام العربية الهندية (٠١٢٣...) للأرقام الإنجليزية العادية عشان نقدر نحللها
+function convertArabicDigitsToLatin(str) {
+    if (!str) return str;
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    return str.replace(/[٠-٩]/g, d => arabicDigits.indexOf(d));
+}
 function renderAnalyticsCharts() {
     const validOrders = orders.filter(o => o.status !== 'CANCELLED');
 
@@ -2927,7 +2920,10 @@ function renderAnalyticsCharts() {
     const hourCounts = new Array(24).fill(0);
     validOrders.forEach(order => {
         if (!order.createdAt) return;
-        const match = order.createdAt.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+        const normalizedTime = convertArabicDigitsToLatin(order.createdAt);
+        const match = normalizedTime.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+     
+        
         if (match) {
             let hour = parseInt(match[1]);
             const period = match[3];
@@ -2997,49 +2993,120 @@ function renderAnalyticsCharts() {
 }
 
 // قائمة أسماء المناطق نفسها الموجودة في فورم الطلب (لضمان التطابق)
-const DELIVERY_AREAS_LIST = [
-    'البدرشين (حول المحل)', 'البدرشين', 'الشورى والجعفري', 'العزبة الشرقية والغربية',
-    'كوبري الري ومصنع الشاي', 'الطرفاية وميت رهينة', 'الحوامدية والشنباب',
-    'العزيزية والمرازيق', 'سقارة وأبوصير', 'الشوبك ومزغونة', 'دهشور وشبرامنت', 'منطقة أخرى'
-];
-
+// إدارة مناطق التوصيل بالكامل: السعر + الوقت + إضافة/حذف منطقة، كل ده من إيد الكاشير
 function renderDeliveryTimesManagement() {
     const container = document.getElementById('admin-view-delivery-times');
     if (!container) return;
 
-    const times = deliveryAreaTimesData || {};
+    const areas = Object.keys(deliveryAreasData).length > 0 ? deliveryAreasData : DEFAULT_DELIVERY_AREAS;
+    const areaNames = Object.keys(areas);
 
     container.innerHTML = `
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5 max-w-2xl">
-            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">🛵 أوقات التوصيل المتوقعة لكل منطقة</h3>
-            <p class="text-xs text-gray-500 font-bold">حدد تقريباً كام دقيقة توصيل بيستغرق لكل منطقة، وهيظهر ده للعميل في السلة وصفحة تتبع الطلب.</p>
-            <div class="space-y-2">
-                ${DELIVERY_AREAS_LIST.map(area => `
-                    <div class="flex items-center justify-between gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <span class="font-bold text-gray-800 text-sm">${area}</span>
-                        <div class="flex items-center gap-2">
-                            <input type="number" min="5" step="5" id="delivery-time-${DELIVERY_AREAS_LIST.indexOf(area)}" value="${times[area] || 30}" class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm font-bold text-center">
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5 max-w-3xl">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">🛵 مناطق التوصيل: الأسعار والأوقات المتوقعة</h3>
+            <p class="text-xs text-gray-500 font-bold">حدد سعر التوصيل ووقت الوصول التقريبي لكل منطقة، وهيظهروا للعميل فوراً في السلة وصفحة تتبع الطلب.</p>
+            <div id="delivery-areas-list" class="space-y-2">
+                ${areaNames.map(area => `
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200" data-area-name="${area}">
+                        <span class="font-bold text-gray-800 text-sm flex-grow min-w-[140px]">${area}</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] text-gray-500 font-bold">السعر</span>
+                            <input type="number" min="0" step="5" class="area-price-input w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm font-bold text-center" value="${areas[area].price ?? 15}">
+                            <span class="text-xs text-gray-500 font-bold">ج.م</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] text-gray-500 font-bold">الوقت</span>
+                            <input type="number" min="5" step="5" class="area-time-input w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm font-bold text-center" value="${areas[area].time ?? 30}">
                             <span class="text-xs text-gray-500 font-bold">دقيقة</span>
                         </div>
+                        <button onclick="deleteDeliveryArea('${area.replace(/'/g, "\\'")}')" class="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg">🗑️ حذف</button>
                     </div>
                 `).join('')}
             </div>
+
+            <div class="flex flex-wrap items-end gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-600 mb-1">اسم المنطقة الجديدة</label>
+                    <input type="text" id="new-area-name" placeholder="مثال: كفر الجزار" class="border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-600 mb-1">السعر (ج.م)</label>
+                    <input type="number" id="new-area-price" min="0" value="20" class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-center">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-600 mb-1">الوقت (دقيقة)</label>
+                    <input type="number" id="new-area-time" min="5" step="5" value="30" class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-center">
+                </div>
+                <button onclick="addNewDeliveryArea()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm">
+                    ➕ إضافة منطقة
+                </button>
+            </div>
+
             <button onclick="saveDeliveryTimes()" class="bg-brand-dark hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-sm">
-                💾 حفظ الأوقات
+                💾 حفظ كل التعديلات
             </button>
         </div>
     `;
 }
 
+// حفظ كل الأسعار والأوقات المعدّلة للمناطق الظاهرة حالياً على الشاشة
 function saveDeliveryTimes() {
-    const updatedTimes = {};
-    DELIVERY_AREAS_LIST.forEach((area, idx) => {
-        const val = parseInt(document.getElementById(`delivery-time-${idx}`).value) || 30;
-        updatedTimes[area] = val;
+    const rows = document.querySelectorAll('#delivery-areas-list [data-area-name]');
+    const updatedAreas = {};
+    rows.forEach(row => {
+        const areaName = row.getAttribute('data-area-name');
+        const price = parseFloat(row.querySelector('.area-price-input').value) || 0;
+        const time = parseInt(row.querySelector('.area-time-input').value) || 30;
+        updatedAreas[areaName] = { price, time };
     });
-    database.ref('deliveryAreaTimes').set(updatedTimes).then(() => {
-        alert('تم حفظ أوقات التوصيل بنجاح ✅');
-    }).catch(err => console.error(err));
+
+    database.ref('deliveryAreas').set(updatedAreas).then(() => {
+        alert('تم حفظ التعديلات بنجاح ✅');
+    }).catch(err => {
+        alert('حدث خطأ أثناء الحفظ.');
+        console.error(err);
+    });
+}
+
+// إضافة منطقة توصيل جديدة بالكامل من إيد الكاشير
+function addNewDeliveryArea() {
+    const nameInput = document.getElementById('new-area-name');
+    const priceInput = document.getElementById('new-area-price');
+    const timeInput = document.getElementById('new-area-time');
+
+    const name = nameInput.value.trim();
+    if (!name) {
+        alert('يرجى كتابة اسم المنطقة أولاً!');
+        return;
+    }
+    const currentAreas = Object.keys(deliveryAreasData).length > 0 ? deliveryAreasData : DEFAULT_DELIVERY_AREAS;
+    if (currentAreas[name]) {
+        alert('هذه المنطقة موجودة بالفعل!');
+        return;
+    }
+
+    const price = parseFloat(priceInput.value) || 0;
+    const time = parseInt(timeInput.value) || 30;
+
+    database.ref('deliveryAreas/' + name).set({ price, time }).then(() => {
+        nameInput.value = '';
+        priceInput.value = '20';
+        timeInput.value = '30';
+    }).catch(err => {
+        alert('حدث خطأ أثناء إضافة المنطقة.');
+        console.error(err);
+    });
+}
+
+// حذف منطقة توصيل بالكامل
+function deleteDeliveryArea(areaName) {
+    if (!confirm(`هل أنت متأكد من حذف منطقة "${areaName}" نهائياً؟`)) return;
+    database.ref('deliveryAreas/' + areaName).remove().then(() => {
+        renderDeliveryTimesManagement();
+    }).catch(err => {
+        alert('حدث خطأ أثناء الحذف.');
+        console.error(err);
+    });
 }
 
 // ===================== نظام نقاط الولاء (تحكم كامل من الكاشير) =====================
@@ -3107,53 +3174,7 @@ function renderLoyaltyManagement() {
     `;
 }
 
-function saveLoyaltySettings() {
-    const poundsPerPoint = parseFloat(document.getElementById('loyalty-pounds-per-point').value) || 10;
-    const pointsForReward = parseFloat(document.getElementById('loyalty-points-needed').value) || 20;
-    const rewardDescription = document.getElementById('loyalty-reward-desc').value.trim() || 'خصم على طلبك القادم';
 
-    database.ref('loyaltySettings').set({
-        poundsPerPoint, pointsForReward, rewardDescription
-    }).then(() => {
-        alert('تم حفظ إعدادات نقاط الولاء بنجاح ✅');
-    }).catch(err => {
-        alert('حدث خطأ أثناء الحفظ.');
-        console.error(err);
-    });
-}
-
-// إضافة نقاط لعميل معين بناءً على قيمة الطلب (تُستدعى تلقائياً عند تسليم الطلب)
-function awardLoyaltyPoints(order) {
-    if (!order.phone || order.phone === '-') return;
-
-    const settings = loyaltySettingsData || {};
-    const poundsPerPoint = settings.poundsPerPoint || 10;
-    const earnedPoints = Math.floor((order.total || 0) / poundsPerPoint);
-    if (earnedPoints <= 0) return;
-
-    // استخراج أول رقم هاتف فقط كمفتاح (لأن الحقل ممكن يحتوي رقمين مفصولين بـ /)
-    const primaryPhone = order.phone.split('/')[0].trim().replace(/\D/g, '');
-    if (!primaryPhone) return;
-
-    const existingPoints = (customersPointsData[primaryPhone] && customersPointsData[primaryPhone].totalPoints) || 0;
-
-    database.ref('customersPoints/' + primaryPhone).update({
-        phone: primaryPhone,
-        name: order.customerName || 'عميل',
-        totalPoints: existingPoints + earnedPoints
-    });
-}
-
-// تصفير نقاط عميل بعد صرف المكافأة له
-function redeemCustomerPoints(phone, pointsToDeduct) {
-    if (!confirm('هل تم صرف المكافأة للعميل بالفعل؟ سيتم خصم النقاط الآن.')) return;
-    const current = (customersPointsData[phone] && customersPointsData[phone].totalPoints) || 0;
-    database.ref('customersPoints/' + phone).update({
-        totalPoints: Math.max(0, current - pointsToDeduct)
-    }).then(() => {
-        renderLoyaltyManagement();
-    });
-}
 
 // ===================== نظام التحكم في حالة فتح/غلق الموقع =====================
 
@@ -3703,14 +3724,7 @@ function updateOrderStatus(orderId, newStatus) {
 
     const updateData = { status: newStatus };
 
-    // منح نقاط الولاء تلقائياً عند التسليم (مرة واحدة فقط لكل طلب)
-    if (newStatus === 'DELIVERED') {
-        const order = orders.find(o => o.id === orderId);
-        if (order && !order.pointsAwarded) {
-            awardLoyaltyPoints(order);
-            updateData.pointsAwarded = true;
-        }
-    }
+
 
     // 2. تحديث الحالة في قاعدة البيانات السحابية
     database.ref('orders/' + orderId).update(updateData).then(() => {
@@ -3867,29 +3881,25 @@ database.ref('restaurantStatus').on('value', (snapshot) => {
 });
 setInterval(checkAndApplyRestaurantStatus, 30000); // إعادة فحص كل 30 ثانية لتغطية المواعيد التلقائية
 
-// الاستماع اللحظي لإعدادات نقاط الولاء
-database.ref('loyaltySettings').on('value', (snapshot) => {
-    loyaltySettingsData = snapshot.val() || {};
-    if (document.getElementById('admin-view-loyalty') && !document.getElementById('admin-view-loyalty').classList.contains('hidden')) {
-        renderLoyaltyManagement();
-    }
-});
 
-// الاستماع اللحظي لنقاط العملاء
-database.ref('customersPoints').on('value', (snapshot) => {
-    customersPointsData = snapshot.val() || {};
-    if (document.getElementById('admin-view-loyalty') && !document.getElementById('admin-view-loyalty').classList.contains('hidden')) {
-        renderLoyaltyManagement();
-    }
-});
 
-// الاستماع اللحظي لأوقات التوصيل لكل منطقة
-database.ref('deliveryAreaTimes').on('value', (snapshot) => {
-    deliveryAreaTimesData = snapshot.val() || {};
+// الاستماع اللحظي لبيانات مناطق التوصيل (الأسعار والأوقات)
+database.ref('deliveryAreas').on('value', (snapshot) => {
+    const dataFromFirebase = snapshot.val();
+
+    // أول مرة الموقع يشتغل ومفيش بيانات محفوظة، نزرع القيم الافتراضية مرة واحدة بس
+    if (!dataFromFirebase) {
+        database.ref('deliveryAreas').set(DEFAULT_DELIVERY_AREAS);
+        deliveryAreasData = DEFAULT_DELIVERY_AREAS;
+    } else {
+        deliveryAreasData = dataFromFirebase;
+    }
+
+    renderAreaDropdownOptions();
+
     if (document.getElementById('admin-view-delivery-times') && !document.getElementById('admin-view-delivery-times').classList.contains('hidden')) {
         renderDeliveryTimesManagement();
     }
-    syncDeliveryFeeFromSelectedArea(); // إعادة عرض وقت التوصيل في السلة لو مفتوحة
 });
 // الاستماع المباشر واللحظي للطلبات
 let isFirstLoad = true;
