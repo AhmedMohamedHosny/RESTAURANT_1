@@ -645,23 +645,8 @@ body.pos-mode-active footer { display: none !important; }
                     <h3 class="text-3xl font-black text-brand-dark">رأي عيلة عجيبة فينا ⭐</h3>
                     <p class="text-gray-500 text-sm mt-1">آراء زبايننا الكرام في البدرشين وضواحيها</p>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
-                        <div class="flex text-amber-400 text-sm gap-1">★★★★★</div>
-                        <p class="text-xs text-gray-700 leading-relaxed">"أحلى كريب قنبلة أكلته في البدرشين بجد! الحشو مليان والخدمة سريعة جداً تسلم إيدكم."</p>
-                        <span class="text-xs font-bold text-brand-dark block">- أسامة محمود</span>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
-                        <div class="flex text-amber-400 text-sm gap-1">★★★★★</div>
-                        <p class="text-xs text-gray-700 leading-relaxed">"البيتزا التشيكن رانش عندهم ملهاش حل، والأكل بيوصل سخن كأنك قاعد في المحل."</p>
-                        <span class="text-xs font-bold text-brand-dark block">- مريم جمال</span>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
-                        <div class="flex text-amber-400 text-sm gap-1">★★★★★</div>
-                        <p class="text-xs text-gray-700 leading-relaxed">"الصواريخ والوافل خطيرين، وسرعة التوصيل بجد عجيبة زي اسم المحل!"</p>
-                        <span class="text-xs font-bold text-brand-dark block">- إسلام خالد</span>
-                    </div>
-                </div>
+                <div id="live-reviews-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                
             </div>
         </section>
         <!-- Contact Section -->
@@ -2622,7 +2607,65 @@ async function exportOrdersReportExcel() {
         function closeTrackModal() {
             document.getElementById('track-modal').classList.add('hidden');
         }
+        // عرض التقييمات الحقيقية اللي العملاء بعتوها فعلاً من صفحة تتبع الطلب
+function renderCustomerReviews() {
+    const container = document.getElementById('live-reviews-container');
+    if (!container) return;
 
+    const reviews = orders
+        .filter(o => o.rating && o.rating >= 4)
+        .sort((a, b) => (b.id || '').localeCompare(a.id || ''))
+        .slice(0, 6);
+
+    if (reviews.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full text-center py-8">
+                <p class="text-gray-400 font-bold text-sm">لسه مفيش تقييمات من عملائنا... كن أول من يقيّم تجربته! ⭐</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = reviews.map(order => `
+        <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3">
+            <div class="flex text-amber-400 text-sm gap-1">${'★'.repeat(order.rating)}${'☆'.repeat(5 - order.rating)}</div>
+            <p class="text-xs text-gray-700 leading-relaxed">"${order.ratingComment ? order.ratingComment : 'تجربة ممتازة مع مطعم عجيبه!'}"</p>
+            <span class="text-xs font-bold text-brand-dark block">- ${order.customerName || 'عميل عجيبه'}</span>
+        </div>
+    `).join('');
+}
+// عرض حالة نقاط الولاء للعميل في صفحة تتبع الطلب
+function renderCustomerLoyaltyStatus(phoneRaw) {
+    if (!phoneRaw) return '';
+    const primaryPhone = phoneRaw.split('/')[0].trim().replace(/\D/g, '');
+    const settings = loyaltySettingsData || {};
+    const pointsForReward = settings.pointsForReward || 20;
+    const rewardDescription = settings.rewardDescription || 'خصم على طلبك القادم';
+    const poundsPerPoint = settings.poundsPerPoint || 10;
+    const customerData = (customersPointsData && customersPointsData[primaryPhone]) || {};
+    const currentPoints = customerData.totalPoints || 0;
+    const canRedeem = currentPoints >= pointsForReward;
+    const remaining = Math.max(0, pointsForReward - currentPoints);
+    const progressPercent = Math.min(100, Math.round((currentPoints / pointsForReward) * 100));
+
+    return `
+        <div class="bg-gradient-to-l from-amber-50 to-amber-100 border border-amber-300 rounded-2xl p-4 mb-4 space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-black text-amber-900">🎁 نقاط الولاء بتاعتك</span>
+                <span class="text-lg font-black text-brand-dark">${currentPoints} نقطة</span>
+            </div>
+            <div class="w-full bg-white/70 rounded-full h-2.5 overflow-hidden">
+                <div class="h-full bg-amber-500" style="width:${progressPercent}%"></div>
+            </div>
+            ${canRedeem ? `
+                <p class="text-xs font-bold text-green-700">🎉 مبروك! تقدر تستلم: ${rewardDescription} — قول للكاشير عند الطلب الجاي.</p>
+            ` : `
+                <p class="text-xs font-bold text-amber-800">باقيلك ${remaining} نقطة عشان تحصل على: ${rewardDescription}</p>
+            `}
+            <p class="text-[10px] text-gray-500 font-bold">بتكسب نقطة واحدة كل ${poundsPerPoint} ج.م في طلباتك المُسلَّمة.</p>
+        </div>
+    `;
+}
 function trackOrder() {
     requestNotificationPermissionIfNeeded();
     const inputVal = document.getElementById('track-input-id').value.trim();
@@ -2656,7 +2699,9 @@ function trackOrder() {
 
     resultDiv.classList.remove('hidden');
     timelineContainer.innerHTML = `
+        ${renderCustomerLoyaltyStatus(userOrders[0].phone)}
         <h4 class="font-bold text-gray-800 text-sm mb-3 border-b pb-2">سجل طلباتك (${userOrders.length} طلب):</h4>
+        
         <div class="space-y-4 max-h-80 overflow-y-auto pl-1">
             ${userOrders.map(order => `
                 <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200 text-xs space-y-2">
@@ -3486,14 +3531,18 @@ function renderRatingSectionForOrder(order) {
 
     return `
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2 space-y-2">
-            <p class="text-[11px] font-bold text-amber-800">قيّم تجربتك معانا 🌟</p>
+            <p class="text-[11px] font-bold text-amber-800">قيّم تجربتك معانا (اختياري) 🌟</p>
             <div id="rating-stars-${order.id}" class="flex gap-1 text-2xl justify-center cursor-pointer" data-selected="0">
                 ${[1,2,3,4,5].map(n => `<span onclick="selectRatingStar('${order.id}', ${n})" data-star="${n}" class="rating-star-${order.id} text-gray-300 transition-colors">★</span>`).join('')}
             </div>
             <textarea id="rating-comment-${order.id}" rows="2" placeholder="تعليقك (اختياري)..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-dark"></textarea>
-            <button onclick="submitOrderRating('${order.id}')" class="w-full bg-brand-dark hover:bg-brand-light text-white font-bold py-2 rounded-lg text-xs">إرسال التقييم</button>
+            <div class="flex gap-2">
+                <button onclick="submitOrderRating('${order.id}')" class="flex-grow bg-brand-dark hover:bg-brand-light text-white font-bold py-2 rounded-lg text-xs">إرسال التقييم</button>
+                <button onclick="dismissRatingPrompt('${order.id}')" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold px-3 rounded-lg text-xs">تخطي</button>
+            </div>
         </div>
     `;
+    
 }
 
 // تحديد عدد النجوم المختارة بصرياً قبل الإرسال
@@ -3511,23 +3560,30 @@ function selectRatingStar(orderId, starCount) {
 // إرسال التقييم وحفظه في Firebase
 function submitOrderRating(orderId) {
     const container = document.getElementById(`rating-stars-${orderId}`);
-    const stars = parseInt(container ? container.getAttribute('data-selected') : 0);
-    if (!stars || stars < 1) {
-        alert('يرجى اختيار عدد النجوم أولاً!');
-        return;
-    }
+    const stars = parseInt(container ? container.getAttribute('data-selected') : 0) || 0;
     const comment = document.getElementById(`rating-comment-${orderId}`).value.trim();
 
-    database.ref('orders/' + orderId).update({
-        rating: stars,
-        ratingComment: comment || null
-    }).then(() => {
+    if (!stars && !comment) {
+        alert('اختار نجوم أو اكتب تعليق على الأقل!');
+        return;
+    }
+
+    const updateData = { ratingComment: comment || null };
+    if (stars > 0) updateData.rating = stars;
+
+    database.ref('orders/' + orderId).update(updateData).then(() => {
         alert('شكراً لتقييمك! 🌟');
         trackOrder();
     }).catch(err => {
         alert('حدث خطأ، حاول مرة أخرى.');
         console.error(err);
     });
+}
+
+// إخفاء صندوق التقييم لو العميل مش عايز يقيّم دلوقتي
+function dismissRatingPrompt(orderId) {
+    const box = document.getElementById(`rating-stars-${orderId}`)?.closest('.bg-amber-50');
+    if (box) box.remove();
 }
 
         function getStatusArabicLabel(status) {
@@ -3840,9 +3896,9 @@ let isFirstLoad = true;
 database.ref('orders').on('value', (snapshot) => {
     const data = snapshot.val();
     orders = data ? Object.values(data) : [];
-
     // 1. إعادة رسم اللوحة دائماً
     renderAdminDashboard();
+    renderCustomerReviews();
     
     // 2. فحص هل المتصفح الحالي هو "الكاشير" من خلال التحقق من تسجيل دخوله أو فتح المودال
     const isAdminOpen = !document.getElementById('admin-dashboard-modal')?.classList.contains('hidden');
